@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <title>Registro de Preceptoria</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="brand-panel" aria-labelledby="page-title">
+        <div class="brand-mark" aria-hidden="true">
+          <span>MF</span>
+        </div>
+        <div>
+          <p class="eyebrow">PRMFC UERJ</p>
+          <h1 id="page-title">Registro de Preceptoria</h1>
+          <p class="lede">Registre atividades e acompanhe seu histórico em uma tela rápida para uso no celular.</p>
+        </div>
+      </section>
+
+      <nav class="view-tabs is-hidden" id="view-tabs" aria-label="Áreas do aplicativo">
+        <button class="tab-button is-active" type="button" data-view="diary">Diário</button>
+        <button class="tab-button" type="button" data-view="schedule">Programação</button>
+      </nav>
+
+      <section class="content-grid app-view" id="diary-view" aria-label="Área de registro e histórico">
+        <div class="panel login-panel" id="login-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Acesso</p>
+              <h2>Identificação</h2>
+            </div>
+          </div>
+
+          <form id="login-form" class="form">
+            <div class="field">
+              <label for="preceptor-name">Nome do preceptor</label>
+              <input id="preceptor-name" name="preceptorName" type="text" autocomplete="name" placeholder="Seu nome completo" required>
+            </div>
+            <div class="input-row">
+              <div class="field">
+                <label for="preceptor-email">E-mail do preceptor</label>
+                <input id="preceptor-email" name="preceptorEmail" type="email" autocomplete="email" placeholder="seunome@exemplo.com" required>
+              </div>
+              <button class="button primary" type="submit">Entrar</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="panel form-panel is-hidden" id="record-panel">
+          <div class="panel-header with-action">
+            <div>
+              <p class="eyebrow">Novo registro</p>
+              <h2 id="record-form-title">Atividade realizada</h2>
+            </div>
+            <button class="icon-button" id="change-preceptor" type="button" aria-label="Trocar preceptor" title="Trocar preceptor">
+              <span aria-hidden="true">↺</span>
+            </button>
+          </div>
+
+          <div class="user-pill" id="active-preceptor" aria-live="polite"></div>
+
+          <form id="record-form" class="form">
+            <input id="record-id" name="recordId" type="hidden">
+
+            <div class="field">
+              <label for="resident-year">Ano do residente</label>
+              <select id="resident-year" name="residentYear">
+                <option value="">Selecione</option>
+                <option value="R1">R1</option>
+                <option value="R2">R2</option>
+                <option value="R3">R3</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="resident-name">Nome do residente</label>
+              <input id="resident-name" name="residentName" type="text" autocomplete="off" placeholder="Nome completo">
+            </div>
+
+            <div class="field">
+              <label for="activity">Atividade realizada</label>
+              <select id="activity" name="activity">
+                <option value="">Carregue as opções da planilha</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="description">Registo descritivo</label>
+              <textarea id="description" name="description" rows="4" placeholder="Descreva brevemente a atividade ou observação"></textarea>
+            </div>
+
+            <div class="field">
+              <label id="epa-label" for="epa-toggle">Qual EPA isso se relaciona?</label>
+              <input id="epa" name="epa" type="hidden">
+              <div class="multi-select" id="epa-multi-select">
+                <button class="multi-select-toggle" id="epa-toggle" type="button" aria-expanded="false" aria-controls="epa-options-panel">
+                  <span id="epa-selected-summary">Selecione uma ou mais EPAs</span>
+                  <span aria-hidden="true">⌄</span>
+                </button>
+                <div class="multi-select-panel is-hidden" id="epa-options-panel" role="group" aria-labelledby="epa-label"></div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="button primary full" id="submit-record" type="submit">Registrar atividade</button>
+              <button class="button secondary full is-hidden" id="cancel-edit" type="button">Cancelar edição</button>
+            </div>
+            <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+
+        <div class="panel history-panel is-hidden" id="history-panel">
+          <div class="panel-header with-action">
+            <div>
+              <p class="eyebrow">Histórico</p>
+              <h2>Minhas atividades</h2>
+            </div>
+            <button class="icon-button" id="refresh-history" type="button" aria-label="Atualizar histórico" title="Atualizar histórico">
+              <span aria-hidden="true">⟳</span>
+            </button>
+          </div>
+
+          <div class="stats-grid" aria-label="Resumo do histórico">
+            <div class="stat">
+              <span class="stat-value" id="total-count">0</span>
+              <span class="stat-label">registros</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="month-count">0</span>
+              <span class="stat-label">neste mês</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="last-date">-</span>
+              <span class="stat-label">último registro</span>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <div class="search-field">
+              <label class="sr-only" for="history-filter">Filtrar histórico</label>
+              <input id="history-filter" type="search" placeholder="Buscar residente, atividade, descrição ou EPA">
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Ano</th>
+                  <th>Residente</th>
+                  <th>Atividade</th>
+                  <th>Descrição</th>
+                  <th>EPA</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
+
+          <div class="empty-state" id="empty-state">
+            <strong>Nenhum registro encontrado.</strong>
+            <span>Quando você registrar uma atividade, ela aparecerá aqui.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-grid app-view is-hidden" id="schedule-view" aria-label="Área de programação de atividades">
+        <div class="panel schedule-form-panel">
+          <div class="panel-header with-action">
+            <div>
+              <p class="eyebrow">Programação</p>
+              <h2 id="schedule-form-title">Nova atividade futura</h2>
+            </div>
+            <button class="icon-button" id="refresh-schedule" type="button" aria-label="Atualizar programação" title="Atualizar programação">
+              <span aria-hidden="true">⟳</span>
+            </button>
+          </div>
+
+          <form id="schedule-form" class="form">
+            <input id="schedule-id" name="scheduleId" type="hidden">
+
+            <div class="date-row">
+              <div class="field">
+                <label for="schedule-date">Data prevista</label>
+                <input id="schedule-date" name="plannedDate" type="date">
+              </div>
+              <div class="field">
+                <label for="schedule-time">Horário</label>
+                <input id="schedule-time" name="plannedTime" type="time">
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="schedule-resident-year">Ano do residente</label>
+              <select id="schedule-resident-year" name="residentYear">
+                <option value="">Selecione</option>
+                <option value="R1">R1</option>
+                <option value="R2">R2</option>
+                <option value="R3">R3</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="schedule-resident-name">Nome do residente</label>
+              <input id="schedule-resident-name" name="residentName" type="text" autocomplete="off" placeholder="Nome completo">
+            </div>
+
+            <div class="field">
+              <label for="schedule-activity">Atividade programada</label>
+              <select id="schedule-activity" name="activity">
+                <option value="">Carregue as opções da planilha</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label id="schedule-epa-label" for="schedule-epa-toggle">EPA relacionada</label>
+              <input id="schedule-epa" name="epa" type="hidden">
+              <div class="multi-select" id="schedule-epa-multi-select">
+                <button class="multi-select-toggle" id="schedule-epa-toggle" type="button" aria-expanded="false" aria-controls="schedule-epa-options-panel">
+                  <span id="schedule-epa-selected-summary">Selecione uma ou mais EPAs</span>
+                  <span aria-hidden="true">⌄</span>
+                </button>
+                <div class="multi-select-panel is-hidden" id="schedule-epa-options-panel" role="group" aria-labelledby="schedule-epa-label"></div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="schedule-notes">Observações</label>
+              <textarea id="schedule-notes" name="notes" rows="4" placeholder="Combine detalhes, objetivos ou combinados para a atividade"></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button class="button primary full" id="submit-schedule" type="submit">Programar atividade</button>
+              <button class="button secondary full is-hidden" id="cancel-schedule-edit" type="button">Cancelar edição</button>
+            </div>
+            <p class="form-message" id="schedule-message" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+
+        <div class="panel schedule-board-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Agenda</p>
+              <h2>Atividades futuras</h2>
+            </div>
+          </div>
+
+          <div class="stats-grid" aria-label="Resumo da programação">
+            <div class="stat">
+              <span class="stat-value" id="schedule-count">0</span>
+              <span class="stat-label">programadas</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="schedule-week-count">0</span>
+              <span class="stat-label">próx. 7 dias</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="schedule-next-date">-</span>
+              <span class="stat-label">próxima</span>
+            </div>
+          </div>
+
+          <div class="toolbar split-toolbar">
+            <div class="search-field">
+              <label class="sr-only" for="schedule-filter">Filtrar programação</label>
+              <input id="schedule-filter" type="search" placeholder="Buscar residente, atividade ou EPA">
+            </div>
+            <div class="calendar-controls">
+              <button class="icon-button small" id="calendar-prev" type="button" aria-label="Mês anterior" title="Mês anterior">‹</button>
+              <strong id="calendar-label"></strong>
+              <button class="icon-button small" id="calendar-next" type="button" aria-label="Próximo mês" title="Próximo mês">›</button>
+            </div>
+          </div>
+
+          <div class="calendar" id="schedule-calendar" aria-label="Calendário de atividades programadas"></div>
+
+          <div class="todo-list" id="schedule-list"></div>
+
+          <div class="empty-state" id="schedule-empty-state">
+            <strong>Nenhuma atividade programada.</strong>
+            <span>As atividades futuras aparecerão aqui e no calendário.</span>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="history-row-template">
+      <tr>
+        <td data-label="Data"></td>
+        <td data-label="Ano"></td>
+        <td data-label="Residente"></td>
+        <td data-label="Atividade"></td>
+        <td data-label="Descrição"></td>
+        <td data-label="EPA"></td>
+        <td data-label="Ações"></td>
+      </tr>
+    </template>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>
