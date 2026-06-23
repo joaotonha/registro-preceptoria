@@ -180,6 +180,35 @@ h2 {
   gap: 8px;
 }
 
+.segmented-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 4px;
+}
+
+.segment-button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary-strong);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.segment-button:hover {
+  background: var(--surface-soft);
+}
+
+.segment-button.is-active {
+  background: var(--primary);
+  color: #fff;
+}
+
 label {
   color: #24324a;
   font-size: 0.88rem;
