@@ -87,6 +87,7 @@ const els = {
   recordForm: document.querySelector("#record-form"),
   recordFormTitle: document.querySelector("#record-form-title"),
   recordId: document.querySelector("#record-id"),
+  activityDate: document.querySelector("#activity-date"),
   residentYear: document.querySelector("#resident-year"),
   residentYearButtons: document.querySelectorAll("[data-resident-year]"),
   residentName: document.querySelector("#resident-name"),
@@ -277,6 +278,10 @@ function dateKey(date) {
   return `${year}-${month}-${day}`;
 }
 
+function todayInputValue() {
+  return dateKey(new Date());
+}
+
 function sameMonth(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return false;
@@ -307,6 +312,10 @@ function getRecordDateKey(timestamp) {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) return "";
   return dateKey(date);
+}
+
+function setActivityDate(value) {
+  els.activityDate.value = value || todayInputValue();
 }
 
 function updateMultiSelectSummary(control) {
@@ -489,6 +498,7 @@ function setResidentYear(value) {
 function clearEditMode() {
   state.editingId = "";
   els.recordId.value = "";
+  setActivityDate();
   setResidentYear("");
   els.recordFormTitle.textContent = "Atividade realizada";
   els.submitRecord.textContent = "Registrar atividade";
@@ -501,6 +511,7 @@ function startEdit(recordId) {
 
   state.editingId = record.id;
   els.recordId.value = record.id;
+  setActivityDate(getRecordDateKey(record.timestamp));
   setResidentYear(record.residentYear || "");
   els.residentName.value = record.residentName || "";
   setSelectValue(els.activity, record.activity);
@@ -749,6 +760,7 @@ async function saveRecord(formData) {
       preceptorName: state.preceptorName,
       preceptorEmail: state.preceptorEmail,
       preceptorUnit: state.preceptorUnit,
+      activityDate: formData.get("activityDate"),
       residentYear: formData.get("residentYear"),
       residentName: formData.get("residentName"),
       activity: formData.get("activity"),
@@ -758,6 +770,7 @@ async function saveRecord(formData) {
 
     rememberResidentNames([formData.get("residentName")]);
     els.recordForm.reset();
+    setActivityDate();
     setResidentYear("");
     setMultiSelectValues(diaryEpaControl, []);
     clearEditMode();
@@ -786,6 +799,7 @@ async function deleteRecord(recordId) {
 
     if (state.editingId === recordId) {
       els.recordForm.reset();
+      setActivityDate();
       setResidentYear("");
       clearEditMode();
     }
@@ -829,6 +843,7 @@ els.refreshHistory.addEventListener("click", loadHistory);
 
 els.cancelEdit.addEventListener("click", () => {
   els.recordForm.reset();
+  setActivityDate();
   setResidentYear("");
   setMultiSelectValues(diaryEpaControl, []);
   clearEditMode();
@@ -909,6 +924,7 @@ els.clearHistoryFilters.addEventListener("click", () => {
 async function initializeApp() {
   localStorage.removeItem("preceptoria.unitNames");
   await loadOptions();
+  setActivityDate();
 
   if (state.preceptorUnit && !state.unitNames.includes(state.preceptorUnit)) {
     state.preceptorUnit = "";
