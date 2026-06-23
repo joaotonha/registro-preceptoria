@@ -37,24 +37,48 @@ const DEFAULT_EPA_OPTIONS = [
   "EPA 15 – Promovendo saúde planetária em seu contexto",
 ];
 
+const DEFAULT_UNIT_OPTIONS = [
+  "CMS Heitor Beltrão",
+  "CMS Hélio Pellegrino",
+  "CMS Maria Augusta Estrella",
+  "CMS Ernani Agrícola",
+  "CF Odalea Firmo Dutra",
+  "CMS Salles Netto",
+  "CF Sérgio Vieira de Mello",
+  "CF Ana Maria Conceição dos Santos Correia",
+  "Paraty",
+  "Piraí",
+  "Três Rios",
+  "Cabo Frio",
+  "Volta Redonda",
+  "AMI",
+  "Saúde da Mulher",
+];
+
 const state = {
   preceptorName: localStorage.getItem("preceptoria.preceptorName") || "",
   preceptorEmail: localStorage.getItem("preceptoria.preceptorEmail") || "",
+  preceptorUnit: localStorage.getItem("preceptoria.preceptorUnit") || "",
   history: [],
-  schedules: [],
+  residentNames: [],
+  unitNames: [...DEFAULT_UNIT_OPTIONS],
   editingId: "",
-  editingScheduleId: "",
   filter: "",
-  scheduleFilter: "",
+  historyScope: localStorage.getItem("preceptoria.historyScope") || "mine",
+  historyFilters: {
+    resident: "",
+    activity: "",
+    dateStart: "",
+    dateEnd: "",
+  },
   activityEpaMap: new Map(),
-  calendarDate: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
   activeView: "diary",
 };
 
 const els = {
   viewTabs: document.querySelector("#view-tabs"),
   diaryView: document.querySelector("#diary-view"),
-  scheduleView: document.querySelector("#schedule-view"),
+  historyView: document.querySelector("#history-view"),
   tabButtons: document.querySelectorAll(".tab-button"),
   loginPanel: document.querySelector("#login-panel"),
   recordPanel: document.querySelector("#record-panel"),
@@ -65,17 +89,28 @@ const els = {
   recordId: document.querySelector("#record-id"),
   residentYear: document.querySelector("#resident-year"),
   residentName: document.querySelector("#resident-name"),
+  residentOptions: document.querySelector("#resident-options"),
   description: document.querySelector("#description"),
   preceptorName: document.querySelector("#preceptor-name"),
   preceptorEmail: document.querySelector("#preceptor-email"),
+  preceptorUnit: document.querySelector("#preceptor-unit"),
   activePreceptor: document.querySelector("#active-preceptor"),
   changePreceptor: document.querySelector("#change-preceptor"),
   refreshHistory: document.querySelector("#refresh-history"),
   submitRecord: document.querySelector("#submit-record"),
   cancelEdit: document.querySelector("#cancel-edit"),
   formMessage: document.querySelector("#form-message"),
+  historyCards: document.querySelector("#history-card-list"),
   historyBody: document.querySelector("#history-body"),
+  historyTitle: document.querySelector("#history-title"),
+  historyScope: document.querySelector("#history-scope"),
   historyFilter: document.querySelector("#history-filter"),
+  historyResidentFilter: document.querySelector("#history-resident-filter"),
+  historyActivityFilter: document.querySelector("#history-activity-filter"),
+  historyDateStart: document.querySelector("#history-date-start"),
+  historyDateEnd: document.querySelector("#history-date-end"),
+  clearHistoryFilters: document.querySelector("#clear-history-filters"),
+  historyResultsCount: document.querySelector("#history-results-count"),
   totalCount: document.querySelector("#total-count"),
   monthCount: document.querySelector("#month-count"),
   lastDate: document.querySelector("#last-date"),
@@ -85,33 +120,6 @@ const els = {
   epaPanel: document.querySelector("#epa-options-panel"),
   epaSelectedSummary: document.querySelector("#epa-selected-summary"),
   rowTemplate: document.querySelector("#history-row-template"),
-  scheduleForm: document.querySelector("#schedule-form"),
-  scheduleFormTitle: document.querySelector("#schedule-form-title"),
-  scheduleId: document.querySelector("#schedule-id"),
-  scheduleDate: document.querySelector("#schedule-date"),
-  scheduleTime: document.querySelector("#schedule-time"),
-  scheduleResidentYear: document.querySelector("#schedule-resident-year"),
-  scheduleResidentName: document.querySelector("#schedule-resident-name"),
-  scheduleActivity: document.querySelector("#schedule-activity"),
-  scheduleNotes: document.querySelector("#schedule-notes"),
-  scheduleEpa: document.querySelector("#schedule-epa"),
-  scheduleEpaToggle: document.querySelector("#schedule-epa-toggle"),
-  scheduleEpaPanel: document.querySelector("#schedule-epa-options-panel"),
-  scheduleEpaSelectedSummary: document.querySelector("#schedule-epa-selected-summary"),
-  submitSchedule: document.querySelector("#submit-schedule"),
-  cancelScheduleEdit: document.querySelector("#cancel-schedule-edit"),
-  scheduleMessage: document.querySelector("#schedule-message"),
-  refreshSchedule: document.querySelector("#refresh-schedule"),
-  scheduleCount: document.querySelector("#schedule-count"),
-  scheduleWeekCount: document.querySelector("#schedule-week-count"),
-  scheduleNextDate: document.querySelector("#schedule-next-date"),
-  scheduleFilter: document.querySelector("#schedule-filter"),
-  scheduleCalendar: document.querySelector("#schedule-calendar"),
-  scheduleList: document.querySelector("#schedule-list"),
-  scheduleEmptyState: document.querySelector("#schedule-empty-state"),
-  calendarPrev: document.querySelector("#calendar-prev"),
-  calendarNext: document.querySelector("#calendar-next"),
-  calendarLabel: document.querySelector("#calendar-label"),
 };
 
 const diaryEpaControl = {
@@ -121,15 +129,6 @@ const diaryEpaControl = {
   summary: els.epaSelectedSummary,
   containerSelector: "#epa-multi-select",
   prefix: "epa-option",
-};
-
-const scheduleEpaControl = {
-  hidden: els.scheduleEpa,
-  toggle: els.scheduleEpaToggle,
-  panel: els.scheduleEpaPanel,
-  summary: els.scheduleEpaSelectedSummary,
-  containerSelector: "#schedule-epa-multi-select",
-  prefix: "schedule-epa-option",
 };
 
 function assertConfigured() {
@@ -144,6 +143,70 @@ function normalizeName(name) {
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
+}
+
+function normalizeUnit(unit) {
+  return normalizeName(unit)
+    .replace(/^Centro Municipal de Saúde\s+/i, "CMS ")
+    .replace(/^Clinica da Familia\s+/i, "CF ")
+    .replace(/^Clínica da Família\s+/i, "CF ");
+}
+
+function residentStorageKey() {
+  return `preceptoria.residentNames.${state.preceptorEmail || "geral"}`;
+}
+
+function loadStoredResidentNames() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(residentStorageKey()) || "[]");
+    return Array.isArray(stored) ? stored.map(normalizeName).filter(Boolean) : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveStoredResidentNames() {
+  localStorage.setItem(residentStorageKey(), JSON.stringify(state.residentNames.slice(0, 200)));
+}
+
+function renderResidentOptions() {
+  els.residentOptions.innerHTML = "";
+  [...new Set(state.residentNames)]
+    .sort((a, b) => a.localeCompare(b, "pt-BR"))
+    .forEach((name) => {
+      const option = document.createElement("option");
+      option.value = name;
+      els.residentOptions.appendChild(option);
+    });
+}
+
+function rememberResidentNames(names) {
+  const merged = new Set(state.residentNames);
+  names.map(normalizeName).filter(Boolean).forEach((name) => merged.add(name));
+  state.residentNames = [...merged].sort((a, b) => a.localeCompare(b, "pt-BR"));
+  saveStoredResidentNames();
+  renderResidentOptions();
+}
+
+function renderUnitOptions(selectedValue = state.preceptorUnit) {
+  const normalizedSelected = normalizeUnit(selectedValue);
+  els.preceptorUnit.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = state.unitNames.length
+    ? "Selecione sua unidade"
+    : "Cadastre unidades na planilha";
+  els.preceptorUnit.appendChild(placeholder);
+
+  state.unitNames.forEach((unit) => {
+    const option = document.createElement("option");
+    option.value = unit;
+    option.textContent = unit;
+    els.preceptorUnit.appendChild(option);
+  });
+
+  els.preceptorUnit.value = state.unitNames.includes(normalizedSelected) ? normalizedSelected : "";
 }
 
 function setMessage(element, text, type = "") {
@@ -194,17 +257,16 @@ function formatDate(value) {
   }).format(date);
 }
 
-function formatScheduleDate(dateValue, timeValue = "") {
-  if (!dateValue) return "-";
-  const [year, month, day] = String(dateValue).split("-").map(Number);
-  if (!year || !month || !day) return dateValue;
-  const date = new Date(year, month - 1, day);
-  const formatted = new Intl.DateTimeFormat("pt-BR", {
+function formatDateOnly(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "2-digit",
   }).format(date);
-  return timeValue ? `${formatted} ${timeValue}` : formatted;
 }
 
 function dateKey(date) {
@@ -212,13 +274,6 @@ function dateKey(date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function parseScheduleDate(item) {
-  if (!item.plannedDate) return null;
-  const [year, month, day] = String(item.plannedDate).split("-").map(Number);
-  if (!year || !month || !day) return null;
-  return new Date(year, month - 1, day);
 }
 
 function sameMonth(value) {
@@ -244,6 +299,13 @@ function setSelectValue(select, value) {
     select.appendChild(option);
   }
   select.value = normalizedValue;
+}
+
+function getRecordDateKey(timestamp) {
+  if (!timestamp) return "";
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "";
+  return dateKey(date);
 }
 
 function updateMultiSelectSummary(control) {
@@ -303,7 +365,6 @@ function closeMultiSelect(control) {
 function toggleMultiSelect(control) {
   const isOpen = !control.panel.classList.contains("is-hidden");
   closeMultiSelect(diaryEpaControl);
-  closeMultiSelect(scheduleEpaControl);
   control.panel.classList.toggle("is-hidden", isOpen);
   control.toggle.setAttribute("aria-expanded", String(!isOpen));
 }
@@ -328,20 +389,31 @@ function fillSelect(element, values, placeholder) {
 function showView(viewName) {
   state.activeView = viewName;
   els.diaryView.classList.toggle("is-hidden", viewName !== "diary");
-  els.scheduleView.classList.toggle("is-hidden", viewName !== "schedule");
+  els.historyView.classList.toggle("is-hidden", viewName !== "history");
   els.tabButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.view === viewName);
   });
 }
 
-function setLoggedIn(preceptorName, preceptorEmail) {
+function updateActivePreceptorLabel() {
+  const parts = [state.preceptorName, state.preceptorEmail, state.preceptorUnit].filter(Boolean);
+  els.activePreceptor.textContent = parts.join(" · ");
+}
+
+function setLoggedIn(preceptorName, preceptorEmail, preceptorUnit = "") {
   state.preceptorName = normalizeName(preceptorName);
   state.preceptorEmail = normalizeEmail(preceptorEmail);
+  state.preceptorUnit = normalizeUnit(preceptorUnit);
   localStorage.setItem("preceptoria.preceptorName", state.preceptorName);
   localStorage.setItem("preceptoria.preceptorEmail", state.preceptorEmail);
-  els.activePreceptor.textContent = `${state.preceptorName} · ${state.preceptorEmail}`;
+  localStorage.setItem("preceptoria.preceptorUnit", state.preceptorUnit);
+  state.residentNames = loadStoredResidentNames();
+  renderResidentOptions();
+  renderUnitOptions(state.preceptorUnit);
+  updateActivePreceptorLabel();
   els.preceptorName.value = state.preceptorName;
   els.preceptorEmail.value = state.preceptorEmail;
+  els.historyScope.value = state.historyScope;
   els.loginPanel.classList.add("is-hidden");
   els.recordPanel.classList.remove("is-hidden");
   els.historyPanel.classList.remove("is-hidden");
@@ -352,29 +424,55 @@ function setLoggedIn(preceptorName, preceptorEmail) {
 function setLoggedOut() {
   state.preceptorName = "";
   state.preceptorEmail = "";
+  state.preceptorUnit = "";
   state.history = [];
-  state.schedules = [];
+  state.residentNames = [];
+  renderResidentOptions();
   clearEditMode();
-  clearScheduleEditMode();
   localStorage.removeItem("preceptoria.preceptorName");
   localStorage.removeItem("preceptoria.preceptorEmail");
+  localStorage.removeItem("preceptoria.preceptorUnit");
   els.viewTabs.classList.add("is-hidden");
   showView("diary");
   els.loginPanel.classList.remove("is-hidden");
   els.recordPanel.classList.add("is-hidden");
   els.historyPanel.classList.add("is-hidden");
+  els.preceptorUnit.value = "";
   els.preceptorName.focus();
 }
 
 function filteredHistory() {
   const term = state.filter.trim().toLowerCase();
-  if (!term) return state.history;
+  const filters = state.historyFilters;
 
   return state.history.filter((item) => {
-    return [item.residentYear, item.residentName, item.activity, item.description, item.epa]
+    const matchesTerm = !term || [item.preceptorName, item.unit, item.residentYear, item.residentName, item.activity, item.description, item.epa]
       .map((value) => String(value || "").toLowerCase())
       .some((value) => value.includes(term));
+
+    const recordDate = getRecordDateKey(item.timestamp);
+    const matchesResident = !filters.resident || item.residentName === filters.resident;
+    const matchesActivity = !filters.activity || item.activity === filters.activity;
+    const matchesStart = !filters.dateStart || (recordDate && recordDate >= filters.dateStart);
+    const matchesEnd = !filters.dateEnd || (recordDate && recordDate <= filters.dateEnd);
+
+    return matchesTerm && matchesResident && matchesActivity && matchesStart && matchesEnd;
   });
+}
+
+function renderHistoryFilterOptions() {
+  const currentResident = els.historyResidentFilter.value;
+  const currentActivity = els.historyActivityFilter.value;
+  const residents = state.history.map((item) => item.residentName).filter(Boolean);
+  const activities = state.history.map((item) => item.activity).filter(Boolean);
+
+  fillSelect(els.historyResidentFilter, residents, "Todos");
+  fillSelect(els.historyActivityFilter, activities, "Todas");
+
+  els.historyResidentFilter.value = residents.includes(currentResident) ? currentResident : "";
+  els.historyActivityFilter.value = activities.includes(currentActivity) ? currentActivity : "";
+  state.historyFilters.resident = els.historyResidentFilter.value;
+  state.historyFilters.activity = els.historyActivityFilter.value;
 }
 
 function clearEditMode() {
@@ -409,32 +507,148 @@ function renderStats() {
   const monthTotal = state.history.filter((item) => sameMonth(item.timestamp)).length;
   const last = state.history[0]?.timestamp;
 
+  els.historyTitle.textContent = state.historyScope === "unit" ? "Minha unidade" : "Meus registros";
   els.totalCount.textContent = total;
   els.monthCount.textContent = monthTotal;
-  els.lastDate.textContent = last ? formatDate(last).split(" ")[0] : "-";
+  els.lastDate.textContent = last ? formatDateOnly(last) : "-";
 }
 
-function renderHistory() {
-  const rows = filteredHistory();
-  els.historyBody.innerHTML = "";
+function buildFeedbackText(item) {
+  return [
+    `Residente: ${item.residentName || "-"}`,
+    `Ano: ${item.residentYear || "-"}`,
+    `Data: ${formatDate(item.timestamp)}`,
+    `Preceptor: ${item.preceptorName || "-"}`,
+    `Unidade: ${item.unit || "-"}`,
+    `Atividade: ${item.activity || "-"}`,
+    `EPA(s): ${item.epa || "-"}`,
+    "",
+    "Registro descritivo:",
+    item.description || "-",
+  ].join("\n");
+}
 
-  rows.forEach((item) => {
-    const row = els.rowTemplate.content.firstElementChild.cloneNode(true);
-    const cells = row.querySelectorAll("td");
-    cells[0].textContent = formatDate(item.timestamp);
-    cells[1].textContent = item.residentYear || "-";
-    cells[2].textContent = item.residentName || "-";
-    cells[3].textContent = item.activity || "-";
-    cells[4].textContent = item.description || "-";
-    cells[5].textContent = item.epa || "-";
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
 
-    const actions = document.createElement("div");
-    actions.className = "row-actions";
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+
+async function copyRecordFeedback(recordId, button) {
+  const record = state.history.find((item) => item.id === recordId);
+  if (!record) return;
+
+  await copyTextToClipboard(buildFeedbackText(record));
+  const originalText = button.textContent;
+  button.textContent = "Copiado";
+  button.disabled = true;
+  window.setTimeout(() => {
+    button.textContent = originalText;
+    button.disabled = false;
+  }, 1200);
+}
+
+function renderHistoryCard(item) {
+  const card = document.createElement("article");
+  card.className = "history-card";
+
+  const header = document.createElement("div");
+  header.className = "history-card-header";
+
+  const titleWrap = document.createElement("div");
+  const date = document.createElement("span");
+  date.className = "history-card-date";
+  date.textContent = formatDate(item.timestamp);
+  const title = document.createElement("h3");
+  title.textContent = item.residentName || "Residente não informado";
+  titleWrap.append(date, title);
+
+  const year = document.createElement("span");
+  year.className = "history-card-year";
+  year.textContent = item.residentYear || "-";
+
+  header.append(titleWrap, year);
+  card.appendChild(header);
+
+  const meta = document.createElement("div");
+  meta.className = "history-card-meta";
+  [
+    ["Preceptor", item.preceptorName || "-"],
+    ["Unidade", item.unit || "-"],
+    ["Atividade", item.activity || "-"],
+    ["EPA", item.epa || "-"],
+  ].forEach(([label, value]) => {
+    const line = document.createElement("span");
+    const strong = document.createElement("strong");
+    strong.textContent = `${label}: `;
+    line.append(strong, document.createTextNode(value));
+    meta.appendChild(line);
+  });
+  card.appendChild(meta);
+
+  const description = document.createElement("p");
+  description.className = "history-card-description";
+  description.textContent = item.description || "Sem registro descritivo.";
+  card.appendChild(description);
+
+  const actions = document.createElement("div");
+  actions.className = "row-actions";
+  actions.append(createActionButton("Copiar feedback", "copy-feedback", item.id));
+  if (item.preceptorEmail === state.preceptorEmail) {
     actions.append(
       createActionButton("Editar", "edit", item.id),
       createActionButton("Excluir", "delete", item.id, true),
     );
-    cells[6].appendChild(actions);
+  }
+  card.appendChild(actions);
+
+  return card;
+}
+
+function renderHistory() {
+  const rows = filteredHistory();
+  els.historyCards.innerHTML = "";
+  els.historyBody.innerHTML = "";
+  const scopeLabel = state.historyScope === "unit" && state.preceptorUnit
+    ? ` da unidade ${state.preceptorUnit}`
+    : "";
+  els.historyResultsCount.textContent = `Mostrando ${rows.length} de ${state.history.length} registros${scopeLabel}`;
+
+  rows.forEach((item) => {
+    els.historyCards.appendChild(renderHistoryCard(item));
+
+    const row = els.rowTemplate.content.firstElementChild.cloneNode(true);
+    const cells = row.querySelectorAll("td");
+    cells[0].textContent = formatDate(item.timestamp);
+    cells[1].textContent = item.preceptorName || "-";
+    cells[2].textContent = item.unit || "-";
+    cells[3].textContent = item.residentYear || "-";
+    cells[4].textContent = item.residentName || "-";
+    cells[5].textContent = item.activity || "-";
+    cells[6].textContent = item.description || "-";
+    cells[7].textContent = item.epa || "-";
+
+    const actions = document.createElement("div");
+    actions.className = "row-actions";
+    actions.append(createActionButton("Copiar feedback", "copy-feedback", item.id));
+    if (item.preceptorEmail === state.preceptorEmail) {
+      actions.append(
+        createActionButton("Editar", "edit", item.id),
+        createActionButton("Excluir", "delete", item.id, true),
+      );
+    }
+    cells[8].appendChild(actions);
     els.historyBody.appendChild(row);
   });
 
@@ -454,19 +668,20 @@ function createActionButton(label, action, id, danger = false) {
 
 async function loadOptions() {
   fillSelect(els.activity, DEFAULT_ACTIVITY_OPTIONS, "Selecione a atividade");
-  fillSelect(els.scheduleActivity, DEFAULT_ACTIVITY_OPTIONS, "Selecione a atividade");
   fillMultiSelect(diaryEpaControl, DEFAULT_EPA_OPTIONS);
-  fillMultiSelect(scheduleEpaControl, DEFAULT_EPA_OPTIONS);
+  state.unitNames = [...DEFAULT_UNIT_OPTIONS];
+  renderUnitOptions();
 
   try {
     const data = await apiGet({ action: "options" });
     const activities = data.activities?.length ? data.activities : DEFAULT_ACTIVITY_OPTIONS;
     const epas = [...DEFAULT_EPA_OPTIONS, ...(data.epas || [])];
     fillSelect(els.activity, activities, "Selecione a atividade");
-    fillSelect(els.scheduleActivity, activities, "Selecione a atividade");
     fillMultiSelect(diaryEpaControl, epas);
-    fillMultiSelect(scheduleEpaControl, epas);
     state.activityEpaMap = new Map((data.activityEpaLinks || []).map((item) => [item.activity, item.epa]));
+    state.unitNames = [...new Set([...DEFAULT_UNIT_OPTIONS, ...(data.units || [])].map(normalizeUnit).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "pt-BR"));
+    renderUnitOptions();
   } catch (error) {
     console.warn(error);
   }
@@ -477,8 +692,30 @@ async function loadHistory() {
   els.refreshHistory.disabled = true;
 
   try {
-    const data = await apiGet({ action: "history", preceptorEmail: state.preceptorEmail });
+    const data = await apiGet({
+      action: "history",
+      preceptorEmail: state.preceptorEmail,
+      preceptorUnit: state.preceptorUnit,
+      scope: state.historyScope,
+    });
+    if (data.unit) {
+      state.preceptorUnit = normalizeUnit(data.unit);
+      localStorage.setItem("preceptoria.preceptorUnit", state.preceptorUnit);
+      if (!state.unitNames.includes(state.preceptorUnit)) {
+        state.unitNames.push(state.preceptorUnit);
+        state.unitNames.sort((a, b) => a.localeCompare(b, "pt-BR"));
+      }
+      renderUnitOptions(state.preceptorUnit);
+      updateActivePreceptorLabel();
+    }
+    if (data.scope && data.scope !== state.historyScope) {
+      state.historyScope = data.scope;
+      els.historyScope.value = state.historyScope;
+      localStorage.setItem("preceptoria.historyScope", state.historyScope);
+    }
     state.history = Array.isArray(data.records) ? data.records : [];
+    rememberResidentNames(state.history.map((item) => item.residentName));
+    renderHistoryFilterOptions();
     renderHistory();
   } catch (error) {
     setMessage(els.formMessage, error.message, "error");
@@ -498,6 +735,7 @@ async function saveRecord(formData) {
       recordId: formData.get("recordId"),
       preceptorName: state.preceptorName,
       preceptorEmail: state.preceptorEmail,
+      preceptorUnit: state.preceptorUnit,
       residentYear: formData.get("residentYear"),
       residentName: formData.get("residentName"),
       activity: formData.get("activity"),
@@ -505,6 +743,7 @@ async function saveRecord(formData) {
       epa: formData.get("epa"),
     });
 
+    rememberResidentNames([formData.get("residentName")]);
     els.recordForm.reset();
     setMultiSelectValues(diaryEpaControl, []);
     clearEditMode();
@@ -543,277 +782,15 @@ async function deleteRecord(recordId) {
   }
 }
 
-function filteredSchedules() {
-  const term = state.scheduleFilter.trim().toLowerCase();
-  const sorted = [...state.schedules].sort(compareSchedules);
-  if (!term) return sorted;
-
-  return sorted.filter((item) => {
-    return [item.plannedDate, item.plannedTime, item.residentYear, item.residentName, item.activity, item.notes, item.epa]
-      .map((value) => String(value || "").toLowerCase())
-      .some((value) => value.includes(term));
-  });
-}
-
-function compareSchedules(a, b) {
-  const dateA = `${a.plannedDate || "9999-12-31"} ${a.plannedTime || "23:59"}`;
-  const dateB = `${b.plannedDate || "9999-12-31"} ${b.plannedTime || "23:59"}`;
-  return dateA.localeCompare(dateB);
-}
-
-function renderScheduleStats() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(today);
-  weekEnd.setDate(today.getDate() + 7);
-
-  const nextItems = state.schedules
-    .map((item) => ({ item, date: parseScheduleDate(item) }))
-    .filter(({ date }) => date && date >= today)
-    .sort((a, b) => a.date - b.date);
-
-  const weekCount = nextItems.filter(({ date }) => date <= weekEnd).length;
-
-  els.scheduleCount.textContent = state.schedules.length;
-  els.scheduleWeekCount.textContent = weekCount;
-  els.scheduleNextDate.textContent = nextItems[0] ? formatScheduleDate(nextItems[0].item.plannedDate).split(" ")[0] : "-";
-}
-
-function renderScheduleCalendar() {
-  const year = state.calendarDate.getFullYear();
-  const month = state.calendarDate.getMonth();
-  const firstDay = new Date(year, month, 1);
-  const start = new Date(firstDay);
-  start.setDate(firstDay.getDate() - firstDay.getDay());
-
-  const itemsByDate = state.schedules.reduce((map, item) => {
-    if (!item.plannedDate) return map;
-    map[item.plannedDate] = map[item.plannedDate] || [];
-    map[item.plannedDate].push(item);
-    return map;
-  }, {});
-
-  els.calendarLabel.textContent = new Intl.DateTimeFormat("pt-BR", {
-    month: "long",
-    year: "numeric",
-  }).format(firstDay);
-
-  els.scheduleCalendar.innerHTML = "";
-  ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"].forEach((day) => {
-    const header = document.createElement("div");
-    header.className = "calendar-weekday";
-    header.textContent = day;
-    els.scheduleCalendar.appendChild(header);
-  });
-
-  for (let index = 0; index < 42; index += 1) {
-    const day = new Date(start);
-    day.setDate(start.getDate() + index);
-    const key = dateKey(day);
-    const count = itemsByDate[key]?.length || 0;
-    const cell = document.createElement("div");
-    cell.className = "calendar-cell";
-    if (day.getMonth() !== month) cell.classList.add("is-muted");
-    if (key === dateKey(new Date())) cell.classList.add("is-today");
-
-    const number = document.createElement("span");
-    number.className = "calendar-day";
-    number.textContent = day.getDate();
-    cell.appendChild(number);
-
-    if (count > 0) {
-      const badge = document.createElement("span");
-      badge.className = "calendar-badge";
-      badge.textContent = count;
-      cell.appendChild(badge);
-    }
-
-    els.scheduleCalendar.appendChild(cell);
-  }
-}
-
-function renderScheduleList() {
-  const items = filteredSchedules();
-  els.scheduleList.innerHTML = "";
-
-  items.forEach((item) => {
-    const card = document.createElement("article");
-    card.className = "todo-card";
-
-    const header = document.createElement("div");
-    header.className = "todo-card-header";
-
-    const titleWrap = document.createElement("div");
-    const date = document.createElement("strong");
-    date.textContent = formatScheduleDate(item.plannedDate, item.plannedTime);
-    const title = document.createElement("span");
-    title.textContent = item.activity || "Atividade sem título";
-    titleWrap.append(date, title);
-
-    const actions = document.createElement("div");
-    actions.className = "row-actions";
-    actions.append(
-      createActionButton("Registrar no Diário", "register-diary", item.id),
-      createActionButton("Editar", "edit-schedule", item.id),
-      createActionButton("Excluir", "delete-schedule", item.id, true),
-    );
-
-    header.append(titleWrap, actions);
-    card.appendChild(header);
-
-    const details = document.createElement("div");
-    details.className = "todo-details";
-    [
-      ["Ano", item.residentYear || "-"],
-      ["Residente", item.residentName || "-"],
-      ["EPA", item.epa || "-"],
-      ["Obs.", item.notes || "-"],
-    ].forEach(([label, value]) => {
-      const line = document.createElement("span");
-      const strong = document.createElement("strong");
-      strong.textContent = `${label}: `;
-      line.append(strong, document.createTextNode(value));
-      details.appendChild(line);
-    });
-    card.appendChild(details);
-
-    els.scheduleList.appendChild(card);
-  });
-
-  els.scheduleEmptyState.style.display = items.length === 0 ? "grid" : "none";
-}
-
-function renderSchedule() {
-  renderScheduleStats();
-  renderScheduleCalendar();
-  renderScheduleList();
-}
-
-async function loadSchedule() {
-  if (!state.preceptorEmail) return;
-  els.refreshSchedule.disabled = true;
-
-  try {
-    const data = await apiGet({ action: "schedule", preceptorEmail: state.preceptorEmail });
-    state.schedules = Array.isArray(data.items) ? data.items : [];
-    renderSchedule();
-  } catch (error) {
-    setMessage(els.scheduleMessage, error.message, "error");
-  } finally {
-    els.refreshSchedule.disabled = false;
-  }
-}
-
-function clearScheduleEditMode() {
-  state.editingScheduleId = "";
-  els.scheduleId.value = "";
-  els.scheduleFormTitle.textContent = "Nova atividade futura";
-  els.submitSchedule.textContent = "Programar atividade";
-  els.cancelScheduleEdit.classList.add("is-hidden");
-}
-
-function startScheduleEdit(scheduleId) {
-  const item = state.schedules.find((schedule) => schedule.id === scheduleId);
-  if (!item) return;
-
-  state.editingScheduleId = item.id;
-  els.scheduleId.value = item.id;
-  els.scheduleDate.value = item.plannedDate || "";
-  els.scheduleTime.value = item.plannedTime || "";
-  els.scheduleResidentYear.value = item.residentYear || "";
-  els.scheduleResidentName.value = item.residentName || "";
-  setSelectValue(els.scheduleActivity, item.activity);
-  els.scheduleNotes.value = item.notes || "";
-  setMultiSelectValues(scheduleEpaControl, splitValues(item.epa));
-  els.scheduleFormTitle.textContent = "Editar programação";
-  els.submitSchedule.textContent = "Salvar programação";
-  els.cancelScheduleEdit.classList.remove("is-hidden");
-  setMessage(els.scheduleMessage, "");
-  els.scheduleForm.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-async function saveSchedule(formData) {
-  els.submitSchedule.disabled = true;
-  const isEditing = Boolean(formData.get("scheduleId"));
-  setMessage(els.scheduleMessage, isEditing ? "Salvando programação..." : "Programando atividade...");
-
-  try {
-    await apiPost({
-      action: isEditing ? "updateSchedule" : "createSchedule",
-      scheduleId: formData.get("scheduleId"),
-      preceptorName: state.preceptorName,
-      preceptorEmail: state.preceptorEmail,
-      plannedDate: formData.get("plannedDate"),
-      plannedTime: formData.get("plannedTime"),
-      residentYear: formData.get("residentYear"),
-      residentName: formData.get("residentName"),
-      activity: formData.get("activity"),
-      epa: formData.get("epa"),
-      notes: formData.get("notes"),
-    });
-
-    els.scheduleForm.reset();
-    setMultiSelectValues(scheduleEpaControl, []);
-    clearScheduleEditMode();
-    setMessage(els.scheduleMessage, isEditing ? "Programação atualizada." : "Atividade programada.", "success");
-    await loadSchedule();
-  } catch (error) {
-    setMessage(els.scheduleMessage, error.message, "error");
-  } finally {
-    els.submitSchedule.disabled = false;
-  }
-}
-
-async function deleteSchedule(scheduleId) {
-  if (!scheduleId) return;
-  const confirmed = window.confirm("Excluir esta atividade programada?");
-  if (!confirmed) return;
-
-  setMessage(els.scheduleMessage, "Excluindo programação...");
-
-  try {
-    await apiPost({
-      action: "deleteSchedule",
-      scheduleId,
-      preceptorEmail: state.preceptorEmail,
-    });
-
-    if (state.editingScheduleId === scheduleId) {
-      els.scheduleForm.reset();
-      clearScheduleEditMode();
-    }
-
-    setMessage(els.scheduleMessage, "Programação excluída.", "success");
-    await loadSchedule();
-  } catch (error) {
-    setMessage(els.scheduleMessage, error.message, "error");
-  }
-}
-
-function registerScheduleInDiary(scheduleId) {
-  const item = state.schedules.find((schedule) => schedule.id === scheduleId);
-  if (!item) return;
-
-  els.recordForm.reset();
-  clearEditMode();
-  els.residentYear.value = item.residentYear || "";
-  els.residentName.value = item.residentName || "";
-  setSelectValue(els.activity, item.activity);
-  els.description.value = item.notes || "";
-  setMultiSelectValues(diaryEpaControl, splitValues(item.epa));
-  showView("diary");
-  setMessage(els.formMessage, "Dados copiados da programação. Revise e toque em Registrar atividade.", "success");
-  els.recordPanel.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
 els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const preceptorName = normalizeName(new FormData(els.loginForm).get("preceptorName"));
   const preceptorEmail = normalizeEmail(new FormData(els.loginForm).get("preceptorEmail"));
+  const preceptorUnit = normalizeUnit(new FormData(els.loginForm).get("preceptorUnit"));
   if (!preceptorName || !preceptorEmail) return;
-  setLoggedIn(preceptorName, preceptorEmail);
+  setLoggedIn(preceptorName, preceptorEmail, preceptorUnit);
   setMessage(els.formMessage, "");
-  await Promise.all([loadOptions(), loadHistory(), loadSchedule()]);
+  await Promise.all([loadOptions(), loadHistory()]);
 });
 
 els.tabButtons.forEach((button) => {
@@ -825,14 +802,8 @@ els.recordForm.addEventListener("submit", (event) => {
   saveRecord(new FormData(els.recordForm));
 });
 
-els.scheduleForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  saveSchedule(new FormData(els.scheduleForm));
-});
-
 els.changePreceptor.addEventListener("click", setLoggedOut);
 els.refreshHistory.addEventListener("click", loadHistory);
-els.refreshSchedule.addEventListener("click", loadSchedule);
 
 els.cancelEdit.addEventListener("click", () => {
   els.recordForm.reset();
@@ -841,48 +812,28 @@ els.cancelEdit.addEventListener("click", () => {
   setMessage(els.formMessage, "");
 });
 
-els.cancelScheduleEdit.addEventListener("click", () => {
-  els.scheduleForm.reset();
-  setMultiSelectValues(scheduleEpaControl, []);
-  clearScheduleEditMode();
-  setMessage(els.scheduleMessage, "");
-});
-
-els.historyBody.addEventListener("click", (event) => {
+function handleHistoryAction(event) {
   const button = event.target.closest("button[data-action]");
   if (!button) return;
 
   if (button.dataset.action === "edit") startEdit(button.dataset.id);
   if (button.dataset.action === "delete") deleteRecord(button.dataset.id);
-});
+  if (button.dataset.action === "copy-feedback") copyRecordFeedback(button.dataset.id, button);
+}
 
-els.scheduleList.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-action]");
-  if (!button) return;
-
-  if (button.dataset.action === "register-diary") registerScheduleInDiary(button.dataset.id);
-  if (button.dataset.action === "edit-schedule") startScheduleEdit(button.dataset.id);
-  if (button.dataset.action === "delete-schedule") deleteSchedule(button.dataset.id);
-});
+els.historyBody.addEventListener("click", handleHistoryAction);
+els.historyCards.addEventListener("click", handleHistoryAction);
 
 els.activity.addEventListener("change", () => {
   const linkedEpa = state.activityEpaMap.get(els.activity.value);
   if (linkedEpa) setMultiSelectValues(diaryEpaControl, splitValues(linkedEpa));
 });
 
-els.scheduleActivity.addEventListener("change", () => {
-  const linkedEpa = state.activityEpaMap.get(els.scheduleActivity.value);
-  if (linkedEpa) setMultiSelectValues(scheduleEpaControl, splitValues(linkedEpa));
-});
-
 els.epaToggle.addEventListener("click", () => toggleMultiSelect(diaryEpaControl));
-els.scheduleEpaToggle.addEventListener("click", () => toggleMultiSelect(scheduleEpaControl));
 els.epaPanel.addEventListener("change", () => updateMultiSelectSummary(diaryEpaControl));
-els.scheduleEpaPanel.addEventListener("change", () => updateMultiSelectSummary(scheduleEpaControl));
 
 document.addEventListener("click", (event) => {
   if (!event.target.closest(diaryEpaControl.containerSelector)) closeMultiSelect(diaryEpaControl);
-  if (!event.target.closest(scheduleEpaControl.containerSelector)) closeMultiSelect(scheduleEpaControl);
 });
 
 els.historyFilter.addEventListener("input", (event) => {
@@ -890,24 +841,66 @@ els.historyFilter.addEventListener("input", (event) => {
   renderHistory();
 });
 
-els.scheduleFilter.addEventListener("input", (event) => {
-  state.scheduleFilter = event.target.value;
-  renderScheduleList();
+els.historyResidentFilter.addEventListener("change", (event) => {
+  state.historyFilters.resident = event.target.value;
+  renderHistory();
 });
 
-els.calendarPrev.addEventListener("click", () => {
-  state.calendarDate = new Date(state.calendarDate.getFullYear(), state.calendarDate.getMonth() - 1, 1);
-  renderScheduleCalendar();
+els.historyActivityFilter.addEventListener("change", (event) => {
+  state.historyFilters.activity = event.target.value;
+  renderHistory();
 });
 
-els.calendarNext.addEventListener("click", () => {
-  state.calendarDate = new Date(state.calendarDate.getFullYear(), state.calendarDate.getMonth() + 1, 1);
-  renderScheduleCalendar();
+els.historyScope.addEventListener("change", async (event) => {
+  state.historyScope = event.target.value;
+  localStorage.setItem("preceptoria.historyScope", state.historyScope);
+  await loadHistory();
 });
 
-if (state.preceptorName && state.preceptorEmail) {
-  setLoggedIn(state.preceptorName, state.preceptorEmail);
-  Promise.all([loadOptions(), loadHistory(), loadSchedule()]);
-} else {
-  showView("diary");
+els.historyDateStart.addEventListener("change", (event) => {
+  state.historyFilters.dateStart = event.target.value;
+  renderHistory();
+});
+
+els.historyDateEnd.addEventListener("change", (event) => {
+  state.historyFilters.dateEnd = event.target.value;
+  renderHistory();
+});
+
+els.clearHistoryFilters.addEventListener("click", () => {
+  state.filter = "";
+  state.historyFilters = {
+    resident: "",
+    activity: "",
+    dateStart: "",
+    dateEnd: "",
+  };
+  els.historyFilter.value = "";
+  els.historyResidentFilter.value = "";
+  els.historyActivityFilter.value = "";
+  els.historyDateStart.value = "";
+  els.historyDateEnd.value = "";
+  renderHistory();
+});
+
+async function initializeApp() {
+  localStorage.removeItem("preceptoria.unitNames");
+  await loadOptions();
+
+  if (state.preceptorUnit && !state.unitNames.includes(state.preceptorUnit)) {
+    state.preceptorUnit = "";
+    localStorage.removeItem("preceptoria.preceptorUnit");
+  }
+
+  if (state.preceptorName && state.preceptorEmail && state.preceptorUnit) {
+    setLoggedIn(state.preceptorName, state.preceptorEmail, state.preceptorUnit);
+    await loadHistory();
+  } else {
+    els.preceptorName.value = state.preceptorName;
+    els.preceptorEmail.value = state.preceptorEmail;
+    renderUnitOptions();
+    showView("diary");
+  }
 }
+
+initializeApp();
