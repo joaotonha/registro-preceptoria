@@ -76,12 +76,12 @@
 
             <div class="field">
               <label for="resident-year">Ano do residente</label>
-              <select id="resident-year" name="residentYear">
-                <option value="">Selecione</option>
-                <option value="R1">R1</option>
-                <option value="R2">R2</option>
-                <option value="R3">R3</option>
-              </select>
+              <input id="resident-year" name="residentYear" type="hidden">
+              <div class="segmented-control" aria-label="Ano do residente">
+                <button class="segment-button" type="button" data-resident-year="R1">R1</button>
+                <button class="segment-button" type="button" data-resident-year="R2">R2</button>
+                <button class="segment-button" type="button" data-resident-year="R3">R3</button>
+              </div>
             </div>
 
             <div class="field">
