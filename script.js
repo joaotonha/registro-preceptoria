@@ -694,6 +694,7 @@ async function loadHistory() {
   try {
     const data = await apiGet({
       action: "history",
+      preceptorName: state.preceptorName,
       preceptorEmail: state.preceptorEmail,
       preceptorUnit: state.preceptorUnit,
       scope: state.historyScope,
