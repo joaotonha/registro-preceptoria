@@ -88,6 +88,7 @@ const els = {
   recordFormTitle: document.querySelector("#record-form-title"),
   recordId: document.querySelector("#record-id"),
   residentYear: document.querySelector("#resident-year"),
+  residentYearButtons: document.querySelectorAll("[data-resident-year]"),
   residentName: document.querySelector("#resident-name"),
   residentOptions: document.querySelector("#resident-options"),
   description: document.querySelector("#description"),
@@ -475,9 +476,20 @@ function renderHistoryFilterOptions() {
   state.historyFilters.activity = els.historyActivityFilter.value;
 }
 
+function setResidentYear(value) {
+  const selectedYear = String(value || "");
+  els.residentYear.value = selectedYear;
+  els.residentYearButtons.forEach((button) => {
+    const isSelected = button.dataset.residentYear === selectedYear;
+    button.classList.toggle("is-active", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+  });
+}
+
 function clearEditMode() {
   state.editingId = "";
   els.recordId.value = "";
+  setResidentYear("");
   els.recordFormTitle.textContent = "Atividade realizada";
   els.submitRecord.textContent = "Registrar atividade";
   els.cancelEdit.classList.add("is-hidden");
@@ -489,7 +501,7 @@ function startEdit(recordId) {
 
   state.editingId = record.id;
   els.recordId.value = record.id;
-  els.residentYear.value = record.residentYear || "";
+  setResidentYear(record.residentYear || "");
   els.residentName.value = record.residentName || "";
   setSelectValue(els.activity, record.activity);
   els.description.value = record.description || "";
@@ -746,6 +758,7 @@ async function saveRecord(formData) {
 
     rememberResidentNames([formData.get("residentName")]);
     els.recordForm.reset();
+    setResidentYear("");
     setMultiSelectValues(diaryEpaControl, []);
     clearEditMode();
     setMessage(els.formMessage, isEditing ? "Registro atualizado com sucesso." : "Registro salvo com sucesso.", "success");
@@ -773,6 +786,7 @@ async function deleteRecord(recordId) {
 
     if (state.editingId === recordId) {
       els.recordForm.reset();
+      setResidentYear("");
       clearEditMode();
     }
 
@@ -803,11 +817,19 @@ els.recordForm.addEventListener("submit", (event) => {
   saveRecord(new FormData(els.recordForm));
 });
 
+els.residentYearButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextValue = els.residentYear.value === button.dataset.residentYear ? "" : button.dataset.residentYear;
+    setResidentYear(nextValue);
+  });
+});
+
 els.changePreceptor.addEventListener("click", setLoggedOut);
 els.refreshHistory.addEventListener("click", loadHistory);
 
 els.cancelEdit.addEventListener("click", () => {
   els.recordForm.reset();
+  setResidentYear("");
   setMultiSelectValues(diaryEpaControl, []);
   clearEditMode();
   setMessage(els.formMessage, "");
