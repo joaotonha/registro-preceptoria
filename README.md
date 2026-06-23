@@ -1,6 +1,89 @@
-# Registro de Preceptoria
+# Diário de Preceptoria
 
 Site estático para GitHub Pages com formulário de registro e painel de histórico conectado ao Google Sheets por Google Apps Script.
+
+## Como Atualizar o Site Depois de Mudanças Feitas Com o Codex
+
+Use esta seção sempre que você pedir mudanças aqui no Codex e quiser colocar a nova versão no ar.
+
+### 1. Entenda Quais Arquivos Mudaram
+
+Depois que o Codex fizer uma alteração, ele normalmente vai dizer quais arquivos foram modificados. Os mais comuns são:
+
+- `index.html`: muda textos, campos, botões e estrutura da tela.
+- `styles.css`: muda cores, tamanhos, espaçamentos e aparência.
+- `script.js`: muda funcionamento do site.
+- `assets/logo-prmfc.png`: imagem do logo no topo.
+- `apps-script/Code.gs`: muda a ponte com o Google Sheets.
+- `README.md`: muda este arquivo de instruções.
+
+### 2. Se Mudou index.html, styles.css ou script.js
+
+Esses arquivos ficam no GitHub e controlam o site publicado no GitHub Pages.
+
+1. Abra seu repositório no GitHub.
+2. Clique no arquivo que mudou, por exemplo `script.js`.
+3. Clique no ícone de lápis, que significa editar.
+4. Apague todo o conteúdo antigo do arquivo no GitHub.
+5. Copie o conteúdo novo do mesmo arquivo aqui na pasta do projeto.
+6. Cole no GitHub.
+7. Clique em `Commit changes`.
+8. Aguarde alguns minutos.
+9. Abra o site publicado e recarregue a página.
+
+Repita isso para cada arquivo que mudou.
+
+### 3. Se Mudou apps-script/Code.gs
+
+Esse arquivo não atualiza pelo GitHub Pages. Ele precisa ser atualizado no Google Apps Script.
+
+1. Abra sua planilha do Google Sheets.
+2. Clique em `Extensões` > `Apps Script`.
+3. Abra o arquivo `Code.gs`.
+4. Apague todo o código antigo.
+5. Copie o conteúdo novo de `apps-script/Code.gs`.
+6. Cole no `Code.gs` do Google Apps Script.
+7. Confirme se o `SPREADSHEET_ID` continua com o ID correto da sua planilha.
+8. Clique em salvar.
+9. Clique em `Implantar`.
+10. Clique em `Gerenciar implantações`.
+11. Clique no lápis para editar a implantação atual.
+12. Em `Versão`, escolha `Nova versão`.
+13. Clique em `Implantar` ou `Salvar`.
+
+Isso mantém a mesma URL `/exec`, mas usando o código novo.
+
+### 4. Como Saber se Precisa Atualizar o Apps Script
+
+Você precisa atualizar o Apps Script quando o arquivo alterado for:
+
+`apps-script/Code.gs`
+
+Exemplos de mudanças que normalmente mexem no Apps Script:
+
+- salvar novos campos na planilha;
+- criar uma nova aba;
+- editar ou excluir registros;
+- mudar cabeçalhos do Google Sheets;
+- mudar como o site lê dados da planilha.
+
+### 5. Como Testar Depois de Atualizar
+
+1. Abra o site publicado no GitHub Pages.
+2. Recarregue a página.
+3. Faça uma ação pequena, como registrar uma atividade de teste.
+4. Abra a planilha e confira se o dado entrou.
+5. Abra a aba `Histórico` e confira se o registro aparece.
+6. Se algo der erro, copie a mensagem e mande aqui para o Codex.
+
+### 6. Dica Importante
+
+Se você alterou `script.js` e `apps-script/Code.gs`, atualize os dois lugares:
+
+- `script.js` no GitHub;
+- `Code.gs` no Google Apps Script.
+
+Se atualizar só um deles, o site pode ficar usando uma versão nova de um lado e antiga do outro.
 
 ## Arquivos
 
@@ -31,6 +114,7 @@ Siga nesta ordem:
    - `Data e Hora`
    - `Nome do Preceptor`
    - `E-mail do Preceptor`
+   - `Unidade`
    - `Ano do Residente`
    - `Nome do Residente`
    - `Atividade Realizada`
@@ -40,7 +124,18 @@ Siga nesta ordem:
 5. Confira se existe uma aba chamada:
    `Base de Dados das Atividades`
 6. Essa aba pode ter colunas de atividades e EPAs, mas o site já tem listas internas. Então, se essa aba ainda não estiver perfeita, tudo bem.
-7. A aba `Programação de Atividades` não precisa existir agora. O Apps Script pode criar essa aba automaticamente quando a área de programação for usada pela primeira vez.
+7. Crie uma aba chamada:
+   `Cadastro de Preceptores`
+8. Nessa aba, use estes cabeçalhos:
+   - `Nome do Preceptor`
+   - `E-mail do Preceptor`
+   - `Unidade`
+   - `Perfil`
+9. Cadastre todos os preceptores que poderão usar o site, com e-mail e unidade.
+10. Preencha a coluna `Unidade` usando sempre os nomes oficiais das unidades.
+11. A lista suspensa de unidades do site vem dessa aba. Se uma unidade não estiver cadastrada ali, ela não aparecerá para seleção no site.
+12. O e-mail informado no site precisa existir nessa aba. Se o e-mail estiver fora do cadastro, o site não libera a consulta/salvamento na planilha.
+13. A unidade selecionada no site precisa ser a mesma unidade cadastrada para aquele e-mail.
 
 ## 2. Copiar o ID da Planilha
 
@@ -171,6 +266,7 @@ Guarde essa URL. Ela é a ponte entre o site e a planilha.
    - `styles.css`
    - `script.js`
    - `README.md`
+   - `assets/logo-prmfc.png`
 3. Envie também a pasta:
    `apps-script`
 4. Se o GitHub não deixar arrastar a pasta inteira, abra a pasta `apps-script` no seu computador e envie o arquivo `Code.gs` separadamente.
@@ -205,13 +301,9 @@ Guarde essa URL. Ela é a ponte entre o site e a planilha.
 2. Digite o nome e e-mail de um preceptor.
 3. Faça um registro simples no Diário.
 4. Veja se ele aparece no histórico.
-5. Abra a aba `Programação`.
-6. Programe uma atividade futura.
-7. Veja se ela aparece na lista e no calendário.
-8. Clique em `Registrar no Diário`.
-9. Confira se os dados foram copiados para o formulário do Diário.
-10. Salve o registro no Diário.
-11. Abra sua planilha e confirme se os dados entraram nas abas corretas.
+5. Abra a aba `Histórico`.
+6. Confira se o registro aparece nos cards.
+7. Abra sua planilha e confirme se os dados entraram na aba correta.
 
 ## 10. Quando Você Alterar o Código Depois
 
@@ -236,18 +328,26 @@ Isso garante que a URL `/exec` use o código atualizado.
 ## Funcionamento do registro
 
 - `Nome do Preceptor` e `E-mail do Preceptor` continuam obrigatórios na identificação.
+- O campo `Unidade` aparece na identificação como uma lista suspensa fechada.
+- A lista de unidades vem da aba `Cadastro de Preceptores`, usando os nomes preenchidos na coluna `Unidade`.
+- O Apps Script confere se o e-mail do preceptor existe no `Cadastro de Preceptores`.
+- O Apps Script também confere se a unidade selecionada corresponde à unidade cadastrada para aquele e-mail.
+- O histórico pode ser alternado entre `Meus registros` e `Minha unidade`.
+- Em `Minha unidade`, o preceptor consegue ler e copiar registros de colegas da mesma unidade.
+- Em registros feitos por outros preceptores, os botões de editar e excluir não aparecem.
 - Os campos da atividade não são obrigatórios. O preceptor pode registrar uma atividade mesmo deixando ano, residente, atividade, descrição ou EPA em branco.
+- O campo `Nome do Residente` memoriza nomes já digitados ou carregados do histórico e mostra sugestões em novos registros.
 - O campo `Qual EPA isso se relaciona?` permite selecionar mais de uma EPA. Quando houver múltiplas EPAs, elas são salvas na mesma célula separadas por ponto e vírgula.
 - No histórico, cada registro criado pelo site pode ser editado ou excluído.
+- O histórico pode ser filtrado por busca livre, residente, atividade e intervalo de datas.
+- O histórico é exibido em cards para facilitar a leitura do registro descritivo.
+- Cada card tem o botão `Copiar feedback`, que copia um texto organizado para colar em feedbacks dos residentes.
 - A edição e a exclusão usam `ID Registo` e `E-mail do Preceptor` para localizar o registro correto na planilha.
 
-## Funcionamento da programação
+## Funcionamento do histórico
 
-- Depois da identificação, o aplicativo mostra duas abas: `Diário` e `Programação`.
-- Em `Programação`, o preceptor pode criar atividades futuras com data, horário, residente, atividade, EPAs e observações.
-- A programação aparece como lista de tarefas e também em uma visualização mensal de calendário.
-- Cada atividade programada pode ser editada ou excluída.
-- O botão `Registrar no Diário` copia os dados da programação para o formulário do diário. O preceptor ainda pode revisar antes de salvar como atividade realizada.
+- Depois da identificação, o aplicativo mostra duas abas: `Diário` e `Histórico`.
+- Em `Histórico`, o preceptor consulta registros, filtra, copia feedbacks e alterna entre `Meus registros` e `Minha unidade`.
 
 ## Cabeçalhos esperados
 
@@ -257,6 +357,7 @@ Na aba `Registo do Preceptor`, o script procura cabeçalhos equivalentes a:
 - `Data e Hora`
 - `Nome do Preceptor`
 - `E-mail do Preceptor`
+- `Unidade`
 - `Ano do Residente`
 - `Nome do Residente`
 - `Atividade Realizada`
@@ -270,21 +371,37 @@ Na aba `Base de Dados das Atividades`, o script tenta carregar listas para preen
 
 Os nomes podem ter pequenas variações, com ou sem acento, como `Atividade`, `Atividade realizada`, `EPA` ou `EPA correspondente`.
 
-Na aba `Programação de Atividades`, o Apps Script usa estes cabeçalhos:
+Na aba `Cadastro de Preceptores`, use estes cabeçalhos:
 
-- `ID Programação`
-- `Criado em`
-- `Atualizado em`
 - `Nome do Preceptor`
 - `E-mail do Preceptor`
-- `Data Prevista`
-- `Horário`
-- `Ano do Residente`
-- `Nome do Residente`
-- `Atividade Programada`
-- `EPA Relacionada`
-- `Observações`
-- `Status`
+- `Unidade`
+- `Perfil`
+
+Essa aba controla os nomes fixos das unidades que aparecem na lista suspensa do site.
+
+## Unidades de Saúde
+
+O site já vem com estas unidades na lista suspensa:
+
+- `CMS Heitor Beltrão`
+- `CMS Hélio Pellegrino`
+- `CMS Maria Augusta Estrella`
+- `CMS Ernani Agrícola`
+- `CF Odalea Firmo Dutra`
+- `CMS Salles Netto`
+- `CF Sérgio Vieira de Mello`
+- `CF Ana Maria Conceição dos Santos Correia`
+- `Paraty`
+- `Piraí`
+- `Três Rios`
+- `Cabo Frio`
+- `Volta Redonda`
+- `AMI`
+- `Saúde da Mulher`
+
+Mesmo com essa lista fixa no site, cada preceptor ainda precisa estar cadastrado na aba `Cadastro de Preceptores` com a unidade correta para o seu e-mail.
+Se a planilha ainda tiver `Centro Municipal de Saúde...` ou `Clínica da Família...`, o sistema converte para `CMS` e `CF` automaticamente.
 
 ## Opções de atividade
 
