@@ -124,18 +124,16 @@ Siga nesta ordem:
 5. Confira se existe uma aba chamada:
    `Base de Dados das Atividades`
 6. Essa aba pode ter colunas de atividades e EPAs, mas o site já tem listas internas. Então, se essa aba ainda não estiver perfeita, tudo bem.
-7. Crie uma aba chamada:
+7. O Apps Script pode criar automaticamente uma aba chamada:
    `Cadastro de Preceptores`
-8. Nessa aba, use estes cabeçalhos:
+8. Essa aba usa estes cabeçalhos:
    - `Nome do Preceptor`
    - `E-mail do Preceptor`
    - `Unidade`
    - `Perfil`
-9. Cadastre todos os preceptores que poderão usar o site, com e-mail e unidade.
-10. Preencha a coluna `Unidade` usando sempre os nomes oficiais das unidades.
-11. A lista suspensa de unidades do site vem dessa aba. Se uma unidade não estiver cadastrada ali, ela não aparecerá para seleção no site.
-12. O e-mail informado no site precisa existir nessa aba. Se o e-mail estiver fora do cadastro, o site não libera a consulta/salvamento na planilha.
-13. A unidade selecionada no site precisa ser a mesma unidade cadastrada para aquele e-mail.
+9. Se o e-mail ainda não existir nessa aba, o site cadastra automaticamente o preceptor no primeiro acesso usando nome, e-mail e unidade informados na identificação.
+10. Depois disso, a unidade daquele e-mail fica vinculada no cadastro.
+11. Se precisar corrigir uma unidade, ajuste diretamente essa aba.
 
 ## 2. Copiar o ID da Planilha
 
@@ -329,9 +327,9 @@ Isso garante que a URL `/exec` use o código atualizado.
 
 - `Nome do Preceptor` e `E-mail do Preceptor` continuam obrigatórios na identificação.
 - O campo `Unidade` aparece na identificação como uma lista suspensa fechada.
-- A lista de unidades vem da aba `Cadastro de Preceptores`, usando os nomes preenchidos na coluna `Unidade`.
-- O Apps Script confere se o e-mail do preceptor existe no `Cadastro de Preceptores`.
-- O Apps Script também confere se a unidade selecionada corresponde à unidade cadastrada para aquele e-mail.
+- A lista de unidades é fixa no site e o Apps Script também cria/usa a aba `Cadastro de Preceptores`.
+- Se o e-mail ainda não existir no `Cadastro de Preceptores`, o Apps Script cria uma linha automaticamente no primeiro acesso.
+- Depois que o e-mail já está cadastrado, o Apps Script confere se a unidade selecionada corresponde à unidade cadastrada para aquele e-mail.
 - O histórico pode ser alternado entre `Meus registros` e `Minha unidade`.
 - Em `Minha unidade`, o preceptor consegue ler e copiar registros de colegas da mesma unidade.
 - Em registros feitos por outros preceptores, os botões de editar e excluir não aparecem.
@@ -378,7 +376,7 @@ Na aba `Cadastro de Preceptores`, use estes cabeçalhos:
 - `Unidade`
 - `Perfil`
 
-Essa aba controla os nomes fixos das unidades que aparecem na lista suspensa do site.
+Essa aba é criada automaticamente pelo Apps Script se ainda não existir. Ela registra o vínculo entre e-mail do preceptor e unidade.
 
 ## Unidades de Saúde
 
@@ -400,7 +398,8 @@ O site já vem com estas unidades na lista suspensa:
 - `AMI`
 - `Saúde da Mulher`
 
-Mesmo com essa lista fixa no site, cada preceptor ainda precisa estar cadastrado na aba `Cadastro de Preceptores` com a unidade correta para o seu e-mail.
+Mesmo com essa lista fixa no site, o primeiro acesso de cada preceptor cria automaticamente uma linha na aba `Cadastro de Preceptores` com nome, e-mail e unidade.
+Depois do primeiro acesso, se precisar corrigir o vínculo de unidade de alguém, ajuste essa aba manualmente.
 Se a planilha ainda tiver `Centro Municipal de Saúde...` ou `Clínica da Família...`, o sistema converte para `CMS` e `CF` automaticamente.
 
 ## Opções de atividade
