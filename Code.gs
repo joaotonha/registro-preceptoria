@@ -2,6 +2,7 @@ const CONFIG = {
   SPREADSHEET_ID: "COLE_AQUI_O_ID_DA_SUA_PLANILHA",
   REGISTRO_SHEET_NAME: "Registo do Preceptor",
   PROGRAMACAO_SHEET_NAME: "Programação de Atividades",
+  PRECEPTORES_SHEET_NAME: "Cadastro de Preceptores",
   BASE_SHEET_NAME: "Base de Dados das Atividades",
   TIMEZONE: "America/Sao_Paulo",
 };
@@ -41,11 +42,30 @@ const DEFAULT_EPA_OPTIONS = [
   "EPA 15 – Promovendo saúde planetária em seu contexto",
 ];
 
+const DEFAULT_UNIT_OPTIONS = [
+  "CMS Heitor Beltrão",
+  "CMS Hélio Pellegrino",
+  "CMS Maria Augusta Estrella",
+  "CMS Ernani Agrícola",
+  "CF Odalea Firmo Dutra",
+  "CMS Salles Netto",
+  "CF Sérgio Vieira de Mello",
+  "CF Ana Maria Conceição dos Santos Correia",
+  "Paraty",
+  "Piraí",
+  "Três Rios",
+  "Cabo Frio",
+  "Volta Redonda",
+  "AMI",
+  "Saúde da Mulher",
+];
+
 const REGISTRO_FIELDS = {
   id: ["id registo", "id registro", "id"],
   timestamp: ["data e hora", "data/hora", "timestamp", "carimbo de data/hora", "data e hora automatica", "data e hora automática"],
   preceptorName: ["nome do preceptor", "preceptor"],
   preceptorEmail: ["e-mail do preceptor", "email do preceptor", "e-mail", "email"],
+  unit: ["unidade", "unidade de saude", "unidade de saúde", "unidade do preceptor"],
   residentYear: ["ano do residente", "ano residente"],
   residentName: ["nome do residente", "residente", "nome do residente avaliado", "residente avaliado"],
   activity: ["atividade", "atividade realizada", "atividade de preceptoria"],
@@ -53,12 +73,26 @@ const REGISTRO_FIELDS = {
   epa: ["qual epa isso se relaciona?", "qual epa isso se relaciona", "epa", "epa correspondente"],
 };
 
+const REGISTRO_HEADERS = [
+  "ID Registo",
+  "Data e Hora",
+  "Nome do Preceptor",
+  "E-mail do Preceptor",
+  "Unidade",
+  "Ano do Residente",
+  "Nome do Residente",
+  "Atividade Realizada",
+  "Registo Descritivo",
+  "Qual EPA isso se relaciona?",
+];
+
 const PROGRAMACAO_HEADERS = [
   "ID Programação",
   "Criado em",
   "Atualizado em",
   "Nome do Preceptor",
   "E-mail do Preceptor",
+  "Unidade",
   "Data Prevista",
   "Horário",
   "Ano do Residente",
@@ -75,6 +109,7 @@ const PROGRAMACAO_FIELDS = {
   updatedAt: ["atualizado em", "data de atualização", "data de atualizacao"],
   preceptorName: ["nome do preceptor", "preceptor"],
   preceptorEmail: ["e-mail do preceptor", "email do preceptor", "e-mail", "email"],
+  unit: ["unidade", "unidade de saude", "unidade de saúde", "unidade do preceptor"],
   plannedDate: ["data prevista", "data programada", "data"],
   plannedTime: ["horário", "horario", "hora"],
   residentYear: ["ano do residente", "ano residente"],
@@ -90,6 +125,13 @@ const BASE_FIELDS = {
   epa: ["qual epa isso se relaciona?", "qual epa isso se relaciona", "epa relacionada", "epa", "epa correspondente"],
 };
 
+const PRECEPTOR_FIELDS = {
+  name: ["nome do preceptor", "preceptor", "nome"],
+  email: ["e-mail do preceptor", "email do preceptor", "e-mail", "email"],
+  unit: ["unidade", "unidade de saude", "unidade de saúde", "unidade do preceptor"],
+  profile: ["perfil", "função", "funcao"],
+};
+
 function doGet(e) {
   try {
     const action = String(e.parameter.action || "history").toLowerCase();
@@ -97,13 +139,19 @@ function doGet(e) {
     if (action === "history") {
       const preceptorEmail = normalizeEmail_(e.parameter.preceptorEmail);
       validateEmail_(preceptorEmail);
-      return json_({ ok: true, records: getHistory_(preceptorEmail) });
+      const profile = getRequiredPreceptorProfile_(preceptorEmail, e.parameter.preceptorUnit);
+      const result = getHistory_(preceptorEmail, {
+        scope: String(e.parameter.scope || "mine").toLowerCase(),
+        profile,
+      });
+      return json_({ ok: true, ...result });
     }
 
     if (action === "schedule") {
       const preceptorEmail = normalizeEmail_(e.parameter.preceptorEmail);
       validateEmail_(preceptorEmail);
-      return json_({ ok: true, items: getSchedule_(preceptorEmail) });
+      const profile = getRequiredPreceptorProfile_(preceptorEmail);
+      return json_({ ok: true, unit: profile.unit, profile, items: getSchedule_(preceptorEmail) });
     }
 
     if (action === "options") {
@@ -122,6 +170,7 @@ function doPost(e) {
     const action = String(payload.action || "create").toLowerCase();
     const preceptorEmail = normalizeEmail_(payload.preceptorEmail);
     validateEmail_(preceptorEmail);
+    const profile = getRequiredPreceptorProfile_(preceptorEmail, payload.preceptorUnit);
 
     if (action === "delete") {
       deleteRecord_(required_(payload.recordId, "Informe o ID do registro."), preceptorEmail);
@@ -135,29 +184,30 @@ function doPost(e) {
 
     const preceptorName = normalizeName_(payload.preceptorName);
     validateName_(preceptorName, "Informe o nome do preceptor.");
+    const preceptorUnit = profile.unit;
 
     if (action === "update") {
-      const record = buildRecordPayload_(payload, preceptorName, preceptorEmail, false);
+      const record = buildRecordPayload_(payload, preceptorName, preceptorEmail, preceptorUnit, false);
       record.id = required_(payload.recordId, "Informe o ID do registro.");
       updateRecord_(record);
       return json_({ ok: true, record });
     }
 
     if (action === "create") {
-      const record = buildRecordPayload_(payload, preceptorName, preceptorEmail, true);
+      const record = buildRecordPayload_(payload, preceptorName, preceptorEmail, preceptorUnit, true);
       appendRecord_(record);
       return json_({ ok: true, record });
     }
 
     if (action === "updateschedule") {
-      const item = buildSchedulePayload_(payload, preceptorName, preceptorEmail, false);
+      const item = buildSchedulePayload_(payload, preceptorName, preceptorEmail, preceptorUnit, false);
       item.id = required_(payload.scheduleId, "Informe o ID da programação.");
       updateSchedule_(item);
       return json_({ ok: true, item });
     }
 
     if (action === "createschedule") {
-      const item = buildSchedulePayload_(payload, preceptorName, preceptorEmail, true);
+      const item = buildSchedulePayload_(payload, preceptorName, preceptorEmail, preceptorUnit, true);
       appendSchedule_(item);
       return json_({ ok: true, item });
     }
@@ -168,12 +218,13 @@ function doPost(e) {
   }
 }
 
-function buildRecordPayload_(payload, preceptorName, preceptorEmail, withId) {
+function buildRecordPayload_(payload, preceptorName, preceptorEmail, preceptorUnit, withId) {
   return {
     id: withId ? Utilities.getUuid() : "",
     timestamp: new Date(),
     preceptorName,
     preceptorEmail,
+    unit: preceptorUnit,
     residentYear: optional_(payload.residentYear),
     residentName: optional_(payload.residentName),
     activity: optional_(payload.activity),
@@ -182,7 +233,7 @@ function buildRecordPayload_(payload, preceptorName, preceptorEmail, withId) {
   };
 }
 
-function buildSchedulePayload_(payload, preceptorName, preceptorEmail, withId) {
+function buildSchedulePayload_(payload, preceptorName, preceptorEmail, preceptorUnit, withId) {
   const now = new Date();
   return {
     id: withId ? Utilities.getUuid() : "",
@@ -190,6 +241,7 @@ function buildSchedulePayload_(payload, preceptorName, preceptorEmail, withId) {
     updatedAt: now,
     preceptorName,
     preceptorEmail,
+    unit: preceptorUnit,
     plannedDate: optional_(payload.plannedDate),
     plannedTime: optional_(payload.plannedTime),
     residentYear: optional_(payload.residentYear),
@@ -202,7 +254,7 @@ function buildSchedulePayload_(payload, preceptorName, preceptorEmail, withId) {
 }
 
 function appendRecord_(record) {
-  const sheet = getSheet_(CONFIG.REGISTRO_SHEET_NAME);
+  const sheet = getRegistroSheet_();
   const headers = getHeaders_(sheet);
   const map = buildHeaderMap_(headers, REGISTRO_FIELDS);
   const row = new Array(headers.length).fill("");
@@ -211,6 +263,7 @@ function appendRecord_(record) {
   row[map.timestamp] = record.timestamp;
   row[map.preceptorName] = record.preceptorName;
   row[map.preceptorEmail] = record.preceptorEmail;
+  row[map.unit] = record.unit;
   row[map.residentYear] = record.residentYear;
   row[map.residentName] = record.residentName;
   row[map.activity] = record.activity;
@@ -229,6 +282,7 @@ function updateRecord_(record) {
 
   row[map.preceptorName] = record.preceptorName;
   row[map.preceptorEmail] = record.preceptorEmail;
+  row[map.unit] = record.unit;
   row[map.residentYear] = record.residentYear;
   row[map.residentName] = record.residentName;
   row[map.activity] = record.activity;
@@ -244,7 +298,7 @@ function deleteRecord_(recordId, preceptorEmail) {
 }
 
 function findRecordLocation_(recordId, preceptorEmail) {
-  const sheet = getSheet_(CONFIG.REGISTRO_SHEET_NAME);
+  const sheet = getRegistroSheet_();
   const values = sheet.getDataRange().getValues();
   if (values.length < 2) throw new Error("Registro não encontrado.");
 
@@ -266,22 +320,32 @@ function findRecordLocation_(recordId, preceptorEmail) {
   throw new Error("Registro não encontrado para este preceptor.");
 }
 
-function getHistory_(preceptorEmail) {
-  const sheet = getSheet_(CONFIG.REGISTRO_SHEET_NAME);
+function getHistory_(preceptorEmail, options) {
+  const profile = options.profile;
+  const requestedScope = options.scope === "unit" ? "unit" : "mine";
+  const unit = profile.unit;
+  const scope = requestedScope === "unit" && unit ? "unit" : "mine";
+  const sheet = getRegistroSheet_();
   const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return [];
+  if (values.length < 2) return { records: [], scope, unit, profile };
 
   const headers = values[0];
   const map = buildHeaderMap_(headers, REGISTRO_FIELDS);
 
-  return values
+  const records = values
     .slice(1)
-    .filter((row) => normalizeEmail_(row[map.preceptorEmail]) === preceptorEmail)
+    .filter((row) => {
+      const rowEmail = normalizeEmail_(row[map.preceptorEmail]);
+      const rowUnit = normalizeUnit_(row[map.unit]);
+      if (scope === "unit") return rowUnit && rowUnit === unit;
+      return rowEmail === preceptorEmail;
+    })
     .map((row) => ({
       id: String(row[map.id] || ""),
       timestamp: toIso_(row[map.timestamp]),
       preceptorName: normalizeName_(row[map.preceptorName]),
       preceptorEmail: normalizeEmail_(row[map.preceptorEmail]),
+      unit: normalizeUnit_(row[map.unit]),
       residentYear: String(row[map.residentYear] || ""),
       residentName: String(row[map.residentName] || ""),
       activity: String(row[map.activity] || ""),
@@ -289,6 +353,8 @@ function getHistory_(preceptorEmail) {
       epa: String(row[map.epa] || ""),
     }))
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  return { records, scope, unit, profile };
 }
 
 function appendSchedule_(item) {
@@ -302,6 +368,7 @@ function appendSchedule_(item) {
   row[map.updatedAt] = item.updatedAt;
   row[map.preceptorName] = item.preceptorName;
   row[map.preceptorEmail] = item.preceptorEmail;
+  row[map.unit] = item.unit;
   row[map.plannedDate] = item.plannedDate;
   row[map.plannedTime] = item.plannedTime;
   row[map.residentYear] = item.residentYear;
@@ -324,6 +391,7 @@ function updateSchedule_(item) {
   row[map.updatedAt] = new Date();
   row[map.preceptorName] = item.preceptorName;
   row[map.preceptorEmail] = item.preceptorEmail;
+  row[map.unit] = item.unit;
   row[map.plannedDate] = item.plannedDate;
   row[map.plannedTime] = item.plannedTime;
   row[map.residentYear] = item.residentYear;
@@ -381,6 +449,7 @@ function getSchedule_(preceptorEmail) {
       updatedAt: toIso_(row[map.updatedAt]),
       preceptorName: normalizeName_(row[map.preceptorName]),
       preceptorEmail: normalizeEmail_(row[map.preceptorEmail]),
+      unit: normalizeUnit_(row[map.unit]),
       plannedDate: toDateInputValue_(row[map.plannedDate]),
       plannedTime: String(row[map.plannedTime] || ""),
       residentYear: String(row[map.residentYear] || ""),
@@ -396,10 +465,10 @@ function getSchedule_(preceptorEmail) {
 function getOptions_() {
   const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   const sheet = spreadsheet.getSheetByName(CONFIG.BASE_SHEET_NAME);
-  if (!sheet) return { activities: DEFAULT_ACTIVITY_OPTIONS, epas: DEFAULT_EPA_OPTIONS };
+  if (!sheet) return { activities: DEFAULT_ACTIVITY_OPTIONS, epas: DEFAULT_EPA_OPTIONS, units: getUnitOptions_() };
 
   const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return { activities: DEFAULT_ACTIVITY_OPTIONS, epas: DEFAULT_EPA_OPTIONS };
+  if (values.length < 2) return { activities: DEFAULT_ACTIVITY_OPTIONS, epas: DEFAULT_EPA_OPTIONS, units: getUnitOptions_() };
 
   const headers = values[0];
   const map = buildOptionalHeaderMap_(headers, BASE_FIELDS);
@@ -420,6 +489,7 @@ function getOptions_() {
     activities: activities.length ? unique_(activities) : DEFAULT_ACTIVITY_OPTIONS,
     epas: unique_([...DEFAULT_EPA_OPTIONS, ...epas]),
     activityEpaLinks: uniqueLinks_(activityEpaLinks),
+    units: getUnitOptions_(),
   };
 }
 
@@ -427,6 +497,12 @@ function getSheet_(sheetName) {
   const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   const sheet = spreadsheet.getSheetByName(sheetName);
   if (!sheet) throw new Error(`A aba "${sheetName}" não foi encontrada.`);
+  return sheet;
+}
+
+function getRegistroSheet_() {
+  const sheet = getSheet_(CONFIG.REGISTRO_SHEET_NAME);
+  ensureHeaders_(sheet, REGISTRO_HEADERS);
   return sheet;
 }
 
@@ -438,9 +514,85 @@ function getScheduleSheet_() {
     sheet = spreadsheet.insertSheet(CONFIG.PROGRAMACAO_SHEET_NAME);
     sheet.getRange(1, 1, 1, PROGRAMACAO_HEADERS.length).setValues([PROGRAMACAO_HEADERS]);
     sheet.setFrozenRows(1);
+    return sheet;
   }
 
+  ensureHeaders_(sheet, PROGRAMACAO_HEADERS);
   return sheet;
+}
+
+function getPreceptorProfile_(preceptorEmail) {
+  const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const sheet = spreadsheet.getSheetByName(CONFIG.PRECEPTORES_SHEET_NAME);
+  if (!sheet) return {};
+
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return {};
+
+  const headers = values[0];
+  const map = buildOptionalHeaderMap_(headers, PRECEPTOR_FIELDS);
+  if (map.email === undefined) return {};
+
+  const normalizedEmail = normalizeEmail_(preceptorEmail);
+  const row = values.slice(1).find((item) => normalizeEmail_(item[map.email]) === normalizedEmail);
+  if (!row) return {};
+
+  return {
+    name: map.name !== undefined ? normalizeName_(row[map.name]) : "",
+    email: normalizedEmail,
+    unit: map.unit !== undefined ? normalizeUnit_(row[map.unit]) : "",
+    profile: map.profile !== undefined ? String(row[map.profile] || "").trim() : "",
+  };
+}
+
+function getRequiredPreceptorProfile_(preceptorEmail, selectedUnit) {
+  const profile = getPreceptorProfile_(preceptorEmail);
+  if (!profile.email || !profile.unit) {
+    throw new Error("E-mail não encontrado no Cadastro de Preceptores ou sem unidade cadastrada.");
+  }
+
+  const unit = normalizeUnit_(selectedUnit);
+  if (unit && unit !== profile.unit) {
+    throw new Error("A unidade selecionada não corresponde ao cadastro deste e-mail.");
+  }
+
+  return profile;
+}
+
+function getUnitOptions_() {
+  const units = [...DEFAULT_UNIT_OPTIONS];
+  const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  const preceptorSheet = spreadsheet.getSheetByName(CONFIG.PRECEPTORES_SHEET_NAME);
+
+  if (preceptorSheet) {
+    const values = preceptorSheet.getDataRange().getValues();
+    if (values.length > 1) {
+      const map = buildOptionalHeaderMap_(values[0], PRECEPTOR_FIELDS);
+      if (map.unit !== undefined) {
+        values.slice(1).forEach((row) => units.push(normalizeUnit_(row[map.unit])));
+      }
+    }
+  }
+
+  return unique_(units);
+}
+
+function ensureHeaders_(sheet, requiredHeaders) {
+  if (sheet.getLastColumn() === 0) {
+    sheet.getRange(1, 1, 1, requiredHeaders.length).setValues([requiredHeaders]);
+    sheet.setFrozenRows(1);
+    return;
+  }
+
+  const currentHeaders = getHeaders_(sheet);
+  const normalizedHeaders = currentHeaders.map(normalizeHeader_);
+  const missingHeaders = requiredHeaders.filter((header) => !normalizedHeaders.includes(normalizeHeader_(header)));
+
+  if (missingHeaders.length === 0) return;
+
+  const startColumn = sheet.getLastColumn() + 1;
+  sheet.getRange(1, startColumn, 1, missingHeaders.length).setValues([missingHeaders]);
+  sheet.setFrozenRows(1);
 }
 
 function getHeaders_(sheet) {
@@ -509,6 +661,13 @@ function validateEmail_(email) {
 
 function normalizeName_(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
+}
+
+function normalizeUnit_(value) {
+  return normalizeName_(value)
+    .replace(/^Centro Municipal de Saúde\s+/i, "CMS ")
+    .replace(/^Clinica da Familia\s+/i, "CF ")
+    .replace(/^Clínica da Família\s+/i, "CF ");
 }
 
 function normalizeEmail_(value) {
