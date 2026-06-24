@@ -784,7 +784,7 @@ function startEpaEdit(progressId) {
   fillEpaTaskSelect(item.epaTask || "");
   setEpaProgressLevel(item.progressLevel || "");
   els.epaProgressNotes.value = item.notes || "";
-  els.epaProgressNextSteps.value = item.nextSteps || "";
+  els.epaProgressNextSteps.value = "";
   els.submitEpaProgress.textContent = "Salvar avaliação EPA";
   els.cancelEpaEdit.classList.remove("is-hidden");
   setMessage(els.epaFormMessage, "");
@@ -951,7 +951,7 @@ function filteredEpaProgress() {
   const filters = state.epaFilters;
 
   return state.epaProgress.filter((item) => {
-    const matchesTerm = !term || [item.preceptorName, item.unit, item.residentYear, item.residentName, item.epa, item.epaTask, item.progressLevel, item.notes, item.nextSteps]
+    const matchesTerm = !term || [item.preceptorName, item.unit, item.residentYear, item.residentName, item.epa, item.epaTask, item.progressLevel, item.notes]
       .map((value) => String(value || "").toLowerCase())
       .some((value) => value.includes(term));
 
@@ -1028,9 +1028,6 @@ function buildEpaProgressText(item) {
     "",
     "Registro da avaliação:",
     item.notes || "-",
-    "",
-    "Próximos passos:",
-    item.nextSteps || "-",
   ].join("\n");
 }
 
@@ -1091,13 +1088,6 @@ function renderEpaCard(item) {
   notes.className = "history-card-description";
   notes.textContent = item.notes || "Sem registro da avaliação.";
   card.appendChild(notes);
-
-  if (item.nextSteps) {
-    const nextSteps = document.createElement("p");
-    nextSteps.className = "history-card-description";
-    nextSteps.textContent = `Próximos passos: ${item.nextSteps}`;
-    card.appendChild(nextSteps);
-  }
 
   const actions = document.createElement("div");
   actions.className = "row-actions";
@@ -1333,7 +1323,7 @@ async function saveEpaProgress(formData) {
       epaTask: formData.get("epaTask"),
       progressLevel: formData.get("progressLevel"),
       notes: formData.get("notes"),
-      nextSteps: formData.get("nextSteps"),
+      nextSteps: "",
     });
 
     rememberResidentNames([formData.get("residentName")]);
