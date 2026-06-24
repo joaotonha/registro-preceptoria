@@ -94,7 +94,7 @@ const els = {
   loginPanel: document.querySelector("#login-panel"),
   recordPanel: document.querySelector("#record-panel"),
   historyPanel: document.querySelector("#history-panel"),
-  epaPanel: document.querySelector("#epa-panel"),
+  epaAppPanel: document.querySelector("#epa-panel"),
   loginForm: document.querySelector("#login-form"),
   recordForm: document.querySelector("#record-form"),
   epaProgressForm: document.querySelector("#epa-progress-form"),
@@ -162,7 +162,7 @@ const els = {
   activity: document.querySelector("#activity"),
   epa: document.querySelector("#epa"),
   epaToggle: document.querySelector("#epa-toggle"),
-  epaPanel: document.querySelector("#epa-options-panel"),
+  epaOptionsPanel: document.querySelector("#epa-options-panel"),
   epaSelectedSummary: document.querySelector("#epa-selected-summary"),
   rowTemplate: document.querySelector("#history-row-template"),
 };
@@ -170,7 +170,7 @@ const els = {
 const diaryEpaControl = {
   hidden: els.epa,
   toggle: els.epaToggle,
-  panel: els.epaPanel,
+  panel: els.epaOptionsPanel,
   summary: els.epaSelectedSummary,
   containerSelector: "#epa-multi-select",
   prefix: "epa-option",
@@ -607,7 +607,7 @@ function setLoggedIn(preceptorName, preceptorEmail, preceptorUnit = "") {
   els.loginPanel.classList.add("is-hidden");
   els.recordPanel.classList.remove("is-hidden");
   els.historyPanel.classList.remove("is-hidden");
-  els.epaPanel.classList.remove("is-hidden");
+  els.epaAppPanel.classList.remove("is-hidden");
   els.viewTabs.classList.remove("is-hidden");
   showView(state.activeView || "diary");
 }
@@ -632,7 +632,7 @@ function setLoggedOut() {
   els.loginPanel.classList.remove("is-hidden");
   els.recordPanel.classList.add("is-hidden");
   els.historyPanel.classList.add("is-hidden");
-  els.epaPanel.classList.add("is-hidden");
+  els.epaAppPanel.classList.add("is-hidden");
   els.preceptorUnit.value = "";
   els.preceptorName.focus();
 }
@@ -763,7 +763,7 @@ function startEpaEdit(progressId) {
   els.cancelEpaEdit.classList.remove("is-hidden");
   setMessage(els.epaFormMessage, "");
   showView("epa");
-  els.epaPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  els.epaAppPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderStats() {
@@ -1095,7 +1095,7 @@ function renderEpaProgress() {
   });
 
   renderEpaSummary(rows);
-  els.epaPanel.classList.toggle("is-empty", rows.length === 0);
+  els.epaAppPanel.classList.toggle("is-empty", rows.length === 0);
   renderEpaStats();
 }
 
@@ -1444,7 +1444,7 @@ els.activity.addEventListener("change", () => {
 });
 
 els.epaToggle.addEventListener("click", () => toggleMultiSelect(diaryEpaControl));
-els.epaPanel.addEventListener("change", () => updateMultiSelectSummary(diaryEpaControl));
+els.epaOptionsPanel.addEventListener("change", () => updateMultiSelectSummary(diaryEpaControl));
 
 document.addEventListener("click", (event) => {
   if (!event.target.closest(diaryEpaControl.containerSelector)) closeMultiSelect(diaryEpaControl);
