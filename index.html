@@ -90,8 +90,13 @@
             </div>
 
             <div class="field">
-              <label for="resident-name">Nome do residente</label>
-              <input id="resident-name" name="residentName" type="text" list="resident-options" autocomplete="off" placeholder="Nome completo">
+              <label for="resident-select">Nome do residente</label>
+              <select id="resident-select" autocomplete="off">
+                <option value="">Carregando residentes...</option>
+              </select>
+              <input id="resident-name" name="residentName" type="hidden">
+              <input class="is-hidden" id="resident-other-name" type="text" autocomplete="off" placeholder="Digite o nome completo">
+              <p class="field-hint" id="resident-list-hint">A lista será filtrada pela sua unidade.</p>
             </div>
 
             <div class="field">
@@ -235,8 +240,6 @@
         <td data-label="Ações"></td>
       </tr>
     </template>
-
-    <datalist id="resident-options"></datalist>
 
     <script src="script.js" defer></script>
   </body>
