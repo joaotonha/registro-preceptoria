@@ -60,6 +60,7 @@ const state = {
   preceptorEmail: localStorage.getItem("preceptoria.preceptorEmail") || "",
   preceptorUnit: localStorage.getItem("preceptoria.preceptorUnit") || "",
   history: [],
+  residentDirectory: [],
   residentNames: [],
   unitNames: [...DEFAULT_UNIT_OPTIONS],
   editingId: "",
@@ -90,8 +91,10 @@ const els = {
   activityDate: document.querySelector("#activity-date"),
   residentYear: document.querySelector("#resident-year"),
   residentYearButtons: document.querySelectorAll("[data-resident-year]"),
+  residentSelect: document.querySelector("#resident-select"),
   residentName: document.querySelector("#resident-name"),
-  residentOptions: document.querySelector("#resident-options"),
+  residentOtherName: document.querySelector("#resident-other-name"),
+  residentListHint: document.querySelector("#resident-list-hint"),
   description: document.querySelector("#description"),
   preceptorName: document.querySelector("#preceptor-name"),
   preceptorEmail: document.querySelector("#preceptor-email"),
@@ -154,6 +157,12 @@ function normalizeUnit(unit) {
     .replace(/^Clínica da Família\s+/i, "CF ");
 }
 
+function normalizeResidentYear(year) {
+  const text = normalizeName(year).toUpperCase();
+  const match = text.match(/\bR[123]\b/);
+  return match ? match[0] : text;
+}
+
 function residentStorageKey() {
   return `preceptoria.residentNames.${state.preceptorEmail || "geral"}`;
 }
@@ -171,15 +180,97 @@ function saveStoredResidentNames() {
   localStorage.setItem(residentStorageKey(), JSON.stringify(state.residentNames.slice(0, 200)));
 }
 
-function renderResidentOptions() {
-  els.residentOptions.innerHTML = "";
-  [...new Set(state.residentNames)]
-    .sort((a, b) => a.localeCompare(b, "pt-BR"))
-    .forEach((name) => {
-      const option = document.createElement("option");
-      option.value = name;
-      els.residentOptions.appendChild(option);
-    });
+function normalizeResidentItem(item) {
+  return {
+    name: normalizeName(item.name || item.residentName),
+    year: normalizeResidentYear(item.year || item.residentYear),
+    unit: normalizeUnit(item.unit),
+  };
+}
+
+function getVisibleResidentItems() {
+  const selectedYear = els.residentYear.value;
+  const directoryItems = state.residentDirectory
+    .map(normalizeResidentItem)
+    .filter((item) => item.name)
+    .filter((item) => !state.preceptorUnit || !item.unit || item.unit === state.preceptorUnit)
+    .filter((item) => !selectedYear || item.year === selectedYear);
+
+  const fallbackItems = state.residentDirectory.length
+    ? []
+    : state.residentNames.map((name) => ({ name, year: "", unit: state.preceptorUnit }));
+
+  const byKey = new Map();
+  [...directoryItems, ...fallbackItems].forEach((item) => {
+    byKey.set(`${item.name}|${item.year}|${item.unit}`, item);
+  });
+
+  return [...byKey.values()].sort((a, b) => {
+    const yearCompare = a.year.localeCompare(b.year, "pt-BR", { numeric: true });
+    return yearCompare || a.name.localeCompare(b.name, "pt-BR");
+  });
+}
+
+function syncResidentNameFromControls() {
+  if (!els.residentSelect) return;
+
+  if (els.residentSelect.value === "__other__") {
+    els.residentOtherName.classList.remove("is-hidden");
+    els.residentName.value = normalizeName(els.residentOtherName.value);
+    return;
+  }
+
+  els.residentOtherName.classList.add("is-hidden");
+  els.residentOtherName.value = "";
+  els.residentName.value = normalizeName(els.residentSelect.value);
+}
+
+function renderResidentOptions(selectedValue = els.residentName.value) {
+  if (!els.residentSelect) return;
+
+  const selectedName = normalizeName(selectedValue);
+  const residents = getVisibleResidentItems();
+  const selectedYear = els.residentYear.value;
+  els.residentSelect.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = residents.length ? "Selecione o residente" : "Nenhum residente encontrado";
+  els.residentSelect.appendChild(placeholder);
+
+  residents.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item.name;
+    option.textContent = item.year ? `${item.name} (${item.year})` : item.name;
+    els.residentSelect.appendChild(option);
+  });
+
+  const otherOption = document.createElement("option");
+  otherOption.value = "__other__";
+  otherOption.textContent = "Outro / não listado";
+  els.residentSelect.appendChild(otherOption);
+
+  const hasSelectedName = selectedName && residents.some((item) => item.name === selectedName);
+  if (hasSelectedName) {
+    els.residentSelect.value = selectedName;
+    els.residentOtherName.value = "";
+  } else if (selectedName) {
+    els.residentSelect.value = "__other__";
+    els.residentOtherName.value = selectedName;
+  } else {
+    els.residentSelect.value = "";
+    els.residentOtherName.value = "";
+  }
+
+  syncResidentNameFromControls();
+
+  const unitText = state.preceptorUnit ? `da unidade ${state.preceptorUnit}` : "da sua unidade";
+  const yearText = selectedYear ? ` ${selectedYear}` : "";
+  if (residents.length) {
+    els.residentListHint.textContent = `${residents.length} residentes${yearText} disponíveis ${unitText}.`;
+  } else {
+    els.residentListHint.textContent = `Nenhum residente${yearText} encontrado ${unitText}. Use "Outro / não listado" se precisar.`;
+  }
 }
 
 function rememberResidentNames(names) {
@@ -436,6 +527,7 @@ function setLoggedOut() {
   state.preceptorEmail = "";
   state.preceptorUnit = "";
   state.history = [];
+  state.residentDirectory = [];
   state.residentNames = [];
   renderResidentOptions();
   clearEditMode();
@@ -493,6 +585,7 @@ function setResidentYear(value) {
     button.classList.toggle("is-active", isSelected);
     button.setAttribute("aria-pressed", String(isSelected));
   });
+  renderResidentOptions();
 }
 
 function clearEditMode() {
@@ -500,6 +593,7 @@ function clearEditMode() {
   els.recordId.value = "";
   setActivityDate();
   setResidentYear("");
+  renderResidentOptions("");
   els.recordFormTitle.textContent = "Atividade realizada";
   els.submitRecord.textContent = "Registrar atividade";
   els.cancelEdit.classList.add("is-hidden");
@@ -513,7 +607,7 @@ function startEdit(recordId) {
   els.recordId.value = record.id;
   setActivityDate(getRecordDateKey(record.timestamp));
   setResidentYear(record.residentYear || "");
-  els.residentName.value = record.residentName || "";
+  renderResidentOptions(record.residentName || "");
   setSelectValue(els.activity, record.activity);
   els.description.value = record.description || "";
   setMultiSelectValues(diaryEpaControl, splitValues(record.epa));
@@ -694,17 +788,26 @@ async function loadOptions() {
   fillMultiSelect(diaryEpaControl, DEFAULT_EPA_OPTIONS);
   state.unitNames = [...DEFAULT_UNIT_OPTIONS];
   renderUnitOptions();
+  renderResidentOptions();
 
   try {
-    const data = await apiGet({ action: "options" });
+    const optionParams = {
+      action: "options",
+      preceptorUnit: state.preceptorUnit,
+    };
+    const data = await apiGet(optionParams);
     const activities = data.activities?.length ? data.activities : DEFAULT_ACTIVITY_OPTIONS;
     const epas = [...DEFAULT_EPA_OPTIONS, ...(data.epas || [])];
     fillSelect(els.activity, activities, "Selecione a atividade");
     fillMultiSelect(diaryEpaControl, epas);
+    state.residentDirectory = Array.isArray(data.residents)
+      ? data.residents.map(normalizeResidentItem).filter((item) => item.name)
+      : [];
     state.activityEpaMap = new Map((data.activityEpaLinks || []).map((item) => [item.activity, item.epa]));
     state.unitNames = [...new Set([...DEFAULT_UNIT_OPTIONS, ...(data.units || [])].map(normalizeUnit).filter(Boolean))]
       .sort((a, b) => a.localeCompare(b, "pt-BR"));
     renderUnitOptions();
+    renderResidentOptions();
   } catch (error) {
     console.warn(error);
   }
@@ -731,6 +834,7 @@ async function loadHistory() {
       }
       renderUnitOptions(state.preceptorUnit);
       updateActivePreceptorLabel();
+      renderResidentOptions();
     }
     if (data.scope && data.scope !== state.historyScope) {
       state.historyScope = data.scope;
@@ -772,6 +876,7 @@ async function saveRecord(formData) {
     els.recordForm.reset();
     setActivityDate();
     setResidentYear("");
+    renderResidentOptions("");
     setMultiSelectValues(diaryEpaControl, []);
     clearEditMode();
     setMessage(els.formMessage, isEditing ? "Registro atualizado com sucesso." : "Registro salvo com sucesso.", "success");
@@ -801,6 +906,7 @@ async function deleteRecord(recordId) {
       els.recordForm.reset();
       setActivityDate();
       setResidentYear("");
+      renderResidentOptions("");
       clearEditMode();
     }
 
@@ -828,8 +934,16 @@ els.tabButtons.forEach((button) => {
 
 els.recordForm.addEventListener("submit", (event) => {
   event.preventDefault();
+  syncResidentNameFromControls();
   saveRecord(new FormData(els.recordForm));
 });
+
+els.residentSelect.addEventListener("change", () => {
+  syncResidentNameFromControls();
+  if (els.residentSelect.value === "__other__") els.residentOtherName.focus();
+});
+
+els.residentOtherName.addEventListener("input", syncResidentNameFromControls);
 
 els.residentYearButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -845,6 +959,7 @@ els.cancelEdit.addEventListener("click", () => {
   els.recordForm.reset();
   setActivityDate();
   setResidentYear("");
+  renderResidentOptions("");
   setMultiSelectValues(diaryEpaControl, []);
   clearEditMode();
   setMessage(els.formMessage, "");
