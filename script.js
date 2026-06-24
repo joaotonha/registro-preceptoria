@@ -55,6 +55,14 @@ const DEFAULT_UNIT_OPTIONS = [
   "Saúde da Mulher",
 ];
 
+const DEFAULT_PROGRESS_LEVEL_OPTIONS = [
+  "Não faz",
+  "Faz com supervisão direta",
+  "Faz com supervisão indireta",
+  "Faz sozinho",
+  "Consegue ensinar/supervisionar",
+];
+
 const state = {
   preceptorName: localStorage.getItem("preceptoria.preceptorName") || "",
   preceptorEmail: localStorage.getItem("preceptoria.preceptorEmail") || "",
@@ -62,6 +70,7 @@ const state = {
   history: [],
   epaProgress: [],
   epaCatalog: [...DEFAULT_EPA_OPTIONS],
+  epaTasks: [],
   residentDirectory: [],
   residentNames: [],
   unitNames: [...DEFAULT_UNIT_OPTIONS],
@@ -116,6 +125,7 @@ const els = {
   epaResidentOtherName: document.querySelector("#epa-resident-other-name"),
   epaResidentListHint: document.querySelector("#epa-resident-list-hint"),
   epaProgressSelect: document.querySelector("#epa-progress-select"),
+  epaTaskSelect: document.querySelector("#epa-task-select"),
   epaProgressLevel: document.querySelector("#epa-progress-level"),
   epaLevelButtons: document.querySelectorAll("[data-epa-level]"),
   epaProgressNotes: document.querySelector("#epa-progress-notes"),
@@ -575,6 +585,20 @@ function fillEpaSelect() {
   fillSelect(els.epaCatalogFilter, state.epaCatalog, "Todas");
 }
 
+function getTasksForEpa(epa) {
+  const selectedEpa = String(epa || "");
+  return state.epaTasks
+    .filter((item) => item.epa === selectedEpa)
+    .map((item) => item.task)
+    .filter(Boolean);
+}
+
+function fillEpaTaskSelect(selectedTask = "") {
+  const tasks = getTasksForEpa(els.epaProgressSelect.value);
+  fillSelect(els.epaTaskSelect, tasks, tasks.length ? "Selecione a subtarefa" : "Selecione primeiro uma EPA");
+  setSelectValue(els.epaTaskSelect, selectedTask);
+}
+
 function showView(viewName) {
   state.activeView = viewName;
   els.diaryView.classList.toggle("is-hidden", viewName !== "diary");
@@ -721,6 +745,7 @@ function clearEpaEditMode() {
   els.epaProgressDate.value = todayInputValue();
   setEpaResidentYear("");
   renderEpaResidentOptions("");
+  fillEpaTaskSelect("");
   setEpaProgressLevel("");
   els.submitEpaProgress.textContent = "Registrar avaliação EPA";
   els.cancelEpaEdit.classList.add("is-hidden");
@@ -756,6 +781,7 @@ function startEpaEdit(progressId) {
   setEpaResidentYear(item.residentYear || "");
   renderEpaResidentOptions(item.residentName || "");
   setSelectValue(els.epaProgressSelect, item.epa);
+  fillEpaTaskSelect(item.epaTask || "");
   setEpaProgressLevel(item.progressLevel || "");
   els.epaProgressNotes.value = item.notes || "";
   els.epaProgressNextSteps.value = item.nextSteps || "";
@@ -925,7 +951,7 @@ function filteredEpaProgress() {
   const filters = state.epaFilters;
 
   return state.epaProgress.filter((item) => {
-    const matchesTerm = !term || [item.preceptorName, item.unit, item.residentYear, item.residentName, item.epa, item.progressLevel, item.notes, item.nextSteps]
+    const matchesTerm = !term || [item.preceptorName, item.unit, item.residentYear, item.residentName, item.epa, item.epaTask, item.progressLevel, item.notes, item.nextSteps]
       .map((value) => String(value || "").toLowerCase())
       .some((value) => value.includes(term));
 
@@ -997,6 +1023,7 @@ function buildEpaProgressText(item) {
     `Preceptor: ${item.preceptorName || "-"}`,
     `Unidade: ${item.unit || "-"}`,
     `EPA: ${item.epa || "-"}`,
+    `Subtarefa: ${item.epaTask || "-"}`,
     `Nível de progressão: ${item.progressLevel || "-"}`,
     "",
     "Registro da avaliação:",
@@ -1050,6 +1077,7 @@ function renderEpaCard(item) {
     ["Preceptor", item.preceptorName || "-"],
     ["Unidade", item.unit || "-"],
     ["EPA", item.epa || "-"],
+    ["Subtarefa", item.epaTask || "-"],
   ].forEach(([label, value]) => {
     const line = document.createElement("span");
     const strong = document.createElement("strong");
@@ -1113,7 +1141,9 @@ async function loadOptions() {
   fillSelect(els.activity, DEFAULT_ACTIVITY_OPTIONS, "Selecione a atividade");
   fillMultiSelect(diaryEpaControl, DEFAULT_EPA_OPTIONS);
   state.epaCatalog = [...DEFAULT_EPA_OPTIONS];
+  state.epaTasks = [];
   fillEpaSelect();
+  fillEpaTaskSelect();
   state.unitNames = [...DEFAULT_UNIT_OPTIONS];
   renderUnitOptions();
   renderResidentOptions();
@@ -1128,9 +1158,15 @@ async function loadOptions() {
     const activities = data.activities?.length ? data.activities : DEFAULT_ACTIVITY_OPTIONS;
     const epas = [...DEFAULT_EPA_OPTIONS, ...(data.epas || [])];
     state.epaCatalog = data.epaCatalog?.length ? data.epaCatalog : epas;
+    state.epaTasks = Array.isArray(data.epaTasks)
+      ? data.epaTasks
+        .map((item) => ({ epa: String(item.epa || ""), task: String(item.task || item.epaTask || "") }))
+        .filter((item) => item.epa && item.task)
+      : [];
     fillSelect(els.activity, activities, "Selecione a atividade");
     fillMultiSelect(diaryEpaControl, epas);
     fillEpaSelect();
+    fillEpaTaskSelect();
     state.residentDirectory = Array.isArray(data.residents)
       ? data.residents.map(normalizeResidentItem).filter((item) => item.name)
       : [];
@@ -1294,6 +1330,7 @@ async function saveEpaProgress(formData) {
       residentYear: formData.get("residentYear"),
       residentName: formData.get("residentName"),
       epa: formData.get("epa"),
+      epaTask: formData.get("epaTask"),
       progressLevel: formData.get("progressLevel"),
       notes: formData.get("notes"),
       nextSteps: formData.get("nextSteps"),
@@ -1442,6 +1479,8 @@ els.activity.addEventListener("change", () => {
   const linkedEpa = state.activityEpaMap.get(els.activity.value);
   if (linkedEpa) setMultiSelectValues(diaryEpaControl, splitValues(linkedEpa));
 });
+
+els.epaProgressSelect.addEventListener("change", () => fillEpaTaskSelect());
 
 els.epaToggle.addEventListener("click", () => toggleMultiSelect(diaryEpaControl));
 els.epaOptionsPanel.addEventListener("change", () => updateMultiSelectSummary(diaryEpaControl));
