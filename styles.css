@@ -104,7 +104,7 @@ h2 {
 
 .view-tabs {
   display: inline-grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -213,6 +213,35 @@ h2 {
 
 .segment-button.is-active {
   background: var(--primary);
+  color: #fff;
+}
+
+.level-control {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 4px;
+}
+
+.level-button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--primary-strong);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.level-button:hover {
+  background: var(--surface-soft);
+}
+
+.level-button.is-active {
+  background: var(--accent);
   color: #fff;
 }
 
@@ -528,6 +557,62 @@ textarea:focus {
   gap: 12px;
 }
 
+.epa-progress-form {
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 18px;
+}
+
+.epa-toolbar {
+  display: grid;
+  gap: 12px;
+}
+
+.epa-filter-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.epa-summary-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.epa-summary-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbff;
+  padding: 12px;
+}
+
+.epa-summary-card strong {
+  display: block;
+  color: var(--primary-strong);
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.epa-summary-card span {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.epa-level-pill {
+  display: inline-grid;
+  min-width: 36px;
+  min-height: 36px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 900;
+}
+
 .history-card {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -563,6 +648,11 @@ textarea:focus {
   padding: 6px 10px;
   font-size: 0.78rem;
   font-weight: 900;
+}
+
+.history-card-year.level {
+  background: var(--accent);
+  color: #fff;
 }
 
 .history-card-meta {
@@ -715,6 +805,8 @@ td {
   .input-row,
   .date-row,
   .filter-grid,
+  .epa-filter-grid,
+  .epa-summary-list,
   .split-toolbar,
   .history-card-header,
   .history-card-meta {
