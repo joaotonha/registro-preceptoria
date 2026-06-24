@@ -60,6 +60,8 @@ const state = {
   preceptorEmail: localStorage.getItem("preceptoria.preceptorEmail") || "",
   preceptorUnit: localStorage.getItem("preceptoria.preceptorUnit") || "",
   history: [],
+  epaProgress: [],
+  epaCatalog: [...DEFAULT_EPA_OPTIONS],
   residentDirectory: [],
   residentNames: [],
   unitNames: [...DEFAULT_UNIT_OPTIONS],
@@ -72,7 +74,14 @@ const state = {
     dateStart: "",
     dateEnd: "",
   },
+  epaFilter: "",
+  epaFilters: {
+    resident: "",
+    epa: "",
+    level: "",
+  },
   activityEpaMap: new Map(),
+  epaEditingId: "",
   activeView: "diary",
 };
 
@@ -80,12 +89,15 @@ const els = {
   viewTabs: document.querySelector("#view-tabs"),
   diaryView: document.querySelector("#diary-view"),
   historyView: document.querySelector("#history-view"),
+  epaView: document.querySelector("#epa-view"),
   tabButtons: document.querySelectorAll(".tab-button"),
   loginPanel: document.querySelector("#login-panel"),
   recordPanel: document.querySelector("#record-panel"),
   historyPanel: document.querySelector("#history-panel"),
+  epaPanel: document.querySelector("#epa-panel"),
   loginForm: document.querySelector("#login-form"),
   recordForm: document.querySelector("#record-form"),
+  epaProgressForm: document.querySelector("#epa-progress-form"),
   recordFormTitle: document.querySelector("#record-form-title"),
   recordId: document.querySelector("#record-id"),
   activityDate: document.querySelector("#activity-date"),
@@ -95,6 +107,19 @@ const els = {
   residentName: document.querySelector("#resident-name"),
   residentOtherName: document.querySelector("#resident-other-name"),
   residentListHint: document.querySelector("#resident-list-hint"),
+  epaProgressId: document.querySelector("#epa-progress-id"),
+  epaProgressDate: document.querySelector("#epa-progress-date"),
+  epaResidentYear: document.querySelector("#epa-resident-year"),
+  epaResidentYearButtons: document.querySelectorAll("[data-epa-resident-year]"),
+  epaResidentSelect: document.querySelector("#epa-resident-select"),
+  epaResidentName: document.querySelector("#epa-resident-name"),
+  epaResidentOtherName: document.querySelector("#epa-resident-other-name"),
+  epaResidentListHint: document.querySelector("#epa-resident-list-hint"),
+  epaProgressSelect: document.querySelector("#epa-progress-select"),
+  epaProgressLevel: document.querySelector("#epa-progress-level"),
+  epaLevelButtons: document.querySelectorAll("[data-epa-level]"),
+  epaProgressNotes: document.querySelector("#epa-progress-notes"),
+  epaProgressNextSteps: document.querySelector("#epa-progress-next-steps"),
   description: document.querySelector("#description"),
   preceptorName: document.querySelector("#preceptor-name"),
   preceptorEmail: document.querySelector("#preceptor-email"),
@@ -102,9 +127,13 @@ const els = {
   activePreceptor: document.querySelector("#active-preceptor"),
   changePreceptor: document.querySelector("#change-preceptor"),
   refreshHistory: document.querySelector("#refresh-history"),
+  refreshEpa: document.querySelector("#refresh-epa"),
   submitRecord: document.querySelector("#submit-record"),
+  submitEpaProgress: document.querySelector("#submit-epa-progress"),
   cancelEdit: document.querySelector("#cancel-edit"),
+  cancelEpaEdit: document.querySelector("#cancel-epa-edit"),
   formMessage: document.querySelector("#form-message"),
+  epaFormMessage: document.querySelector("#epa-form-message"),
   historyCards: document.querySelector("#history-card-list"),
   historyBody: document.querySelector("#history-body"),
   historyTitle: document.querySelector("#history-title"),
@@ -116,9 +145,20 @@ const els = {
   historyDateEnd: document.querySelector("#history-date-end"),
   clearHistoryFilters: document.querySelector("#clear-history-filters"),
   historyResultsCount: document.querySelector("#history-results-count"),
+  epaCards: document.querySelector("#epa-card-list"),
+  epaSummaryList: document.querySelector("#epa-summary-list"),
+  epaFilterInput: document.querySelector("#epa-filter"),
+  epaResidentFilter: document.querySelector("#epa-resident-filter"),
+  epaCatalogFilter: document.querySelector("#epa-catalog-filter"),
+  epaLevelFilter: document.querySelector("#epa-level-filter"),
+  clearEpaFilters: document.querySelector("#clear-epa-filters"),
+  epaResultsCount: document.querySelector("#epa-results-count"),
   totalCount: document.querySelector("#total-count"),
   monthCount: document.querySelector("#month-count"),
   lastDate: document.querySelector("#last-date"),
+  epaTotalCount: document.querySelector("#epa-total-count"),
+  epaResidentCount: document.querySelector("#epa-resident-count"),
+  epaLastDate: document.querySelector("#epa-last-date"),
   activity: document.querySelector("#activity"),
   epa: document.querySelector("#epa"),
   epaToggle: document.querySelector("#epa-toggle"),
@@ -188,8 +228,7 @@ function normalizeResidentItem(item) {
   };
 }
 
-function getVisibleResidentItems() {
-  const selectedYear = els.residentYear.value;
+function getVisibleResidentItems(selectedYear = els.residentYear.value) {
   const directoryItems = state.residentDirectory
     .map(normalizeResidentItem)
     .filter((item) => item.name)
@@ -211,66 +250,110 @@ function getVisibleResidentItems() {
   });
 }
 
-function syncResidentNameFromControls() {
-  if (!els.residentSelect) return;
-
-  if (els.residentSelect.value === "__other__") {
-    els.residentOtherName.classList.remove("is-hidden");
-    els.residentName.value = normalizeName(els.residentOtherName.value);
-    return;
-  }
-
-  els.residentOtherName.classList.add("is-hidden");
-  els.residentOtherName.value = "";
-  els.residentName.value = normalizeName(els.residentSelect.value);
-}
-
-function renderResidentOptions(selectedValue = els.residentName.value) {
-  if (!els.residentSelect) return;
+function renderResidentSelect(options) {
+  const {
+    select,
+    hiddenInput,
+    otherInput,
+    hint,
+    selectedYear,
+    selectedValue,
+  } = options;
+  if (!select) return;
 
   const selectedName = normalizeName(selectedValue);
-  const residents = getVisibleResidentItems();
-  const selectedYear = els.residentYear.value;
-  els.residentSelect.innerHTML = "";
+  const residents = getVisibleResidentItems(selectedYear);
+  select.innerHTML = "";
 
   const placeholder = document.createElement("option");
   placeholder.value = "";
   placeholder.textContent = residents.length ? "Selecione o residente" : "Nenhum residente encontrado";
-  els.residentSelect.appendChild(placeholder);
+  select.appendChild(placeholder);
 
   residents.forEach((item) => {
     const option = document.createElement("option");
     option.value = item.name;
     option.textContent = item.year ? `${item.name} (${item.year})` : item.name;
-    els.residentSelect.appendChild(option);
+    select.appendChild(option);
   });
 
   const otherOption = document.createElement("option");
   otherOption.value = "__other__";
   otherOption.textContent = "Outro / não listado";
-  els.residentSelect.appendChild(otherOption);
+  select.appendChild(otherOption);
 
   const hasSelectedName = selectedName && residents.some((item) => item.name === selectedName);
   if (hasSelectedName) {
-    els.residentSelect.value = selectedName;
-    els.residentOtherName.value = "";
+    select.value = selectedName;
+    otherInput.value = "";
   } else if (selectedName) {
-    els.residentSelect.value = "__other__";
-    els.residentOtherName.value = selectedName;
+    select.value = "__other__";
+    otherInput.value = selectedName;
   } else {
-    els.residentSelect.value = "";
-    els.residentOtherName.value = "";
+    select.value = "";
+    otherInput.value = "";
   }
 
-  syncResidentNameFromControls();
+  if (select.value === "__other__") {
+    otherInput.classList.remove("is-hidden");
+    hiddenInput.value = normalizeName(otherInput.value);
+  } else {
+    otherInput.classList.add("is-hidden");
+    otherInput.value = "";
+    hiddenInput.value = normalizeName(select.value);
+  }
 
   const unitText = state.preceptorUnit ? `da unidade ${state.preceptorUnit}` : "da sua unidade";
   const yearText = selectedYear ? ` ${selectedYear}` : "";
   if (residents.length) {
-    els.residentListHint.textContent = `${residents.length} residentes${yearText} disponíveis ${unitText}.`;
+    hint.textContent = `${residents.length} residentes${yearText} disponíveis ${unitText}.`;
   } else {
-    els.residentListHint.textContent = `Nenhum residente${yearText} encontrado ${unitText}. Use "Outro / não listado" se precisar.`;
+    hint.textContent = `Nenhum residente${yearText} encontrado ${unitText}. Use "Outro / não listado" se precisar.`;
   }
+}
+
+function syncResidentSelect(select, hiddenInput, otherInput) {
+  if (select.value === "__other__") {
+    otherInput.classList.remove("is-hidden");
+    hiddenInput.value = normalizeName(otherInput.value);
+    return;
+  }
+
+  otherInput.classList.add("is-hidden");
+  otherInput.value = "";
+  hiddenInput.value = normalizeName(select.value);
+}
+
+function syncResidentNameFromControls() {
+  if (!els.residentSelect) return;
+  syncResidentSelect(els.residentSelect, els.residentName, els.residentOtherName);
+}
+
+function renderResidentOptions(selectedValue = els.residentName.value) {
+  renderResidentSelect({
+    select: els.residentSelect,
+    hiddenInput: els.residentName,
+    otherInput: els.residentOtherName,
+    hint: els.residentListHint,
+    selectedYear: els.residentYear.value,
+    selectedValue,
+  });
+}
+
+function syncEpaResidentNameFromControls() {
+  if (!els.epaResidentSelect) return;
+  syncResidentSelect(els.epaResidentSelect, els.epaResidentName, els.epaResidentOtherName);
+}
+
+function renderEpaResidentOptions(selectedValue = els.epaResidentName.value) {
+  renderResidentSelect({
+    select: els.epaResidentSelect,
+    hiddenInput: els.epaResidentName,
+    otherInput: els.epaResidentOtherName,
+    hint: els.epaResidentListHint,
+    selectedYear: els.epaResidentYear.value,
+    selectedValue,
+  });
 }
 
 function rememberResidentNames(names) {
@@ -487,10 +570,16 @@ function fillSelect(element, values, placeholder) {
     });
 }
 
+function fillEpaSelect() {
+  fillSelect(els.epaProgressSelect, state.epaCatalog, "Selecione a EPA");
+  fillSelect(els.epaCatalogFilter, state.epaCatalog, "Todas");
+}
+
 function showView(viewName) {
   state.activeView = viewName;
   els.diaryView.classList.toggle("is-hidden", viewName !== "diary");
   els.historyView.classList.toggle("is-hidden", viewName !== "history");
+  els.epaView.classList.toggle("is-hidden", viewName !== "epa");
   els.tabButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.view === viewName);
   });
@@ -518,6 +607,7 @@ function setLoggedIn(preceptorName, preceptorEmail, preceptorUnit = "") {
   els.loginPanel.classList.add("is-hidden");
   els.recordPanel.classList.remove("is-hidden");
   els.historyPanel.classList.remove("is-hidden");
+  els.epaPanel.classList.remove("is-hidden");
   els.viewTabs.classList.remove("is-hidden");
   showView(state.activeView || "diary");
 }
@@ -527,10 +617,13 @@ function setLoggedOut() {
   state.preceptorEmail = "";
   state.preceptorUnit = "";
   state.history = [];
+  state.epaProgress = [];
   state.residentDirectory = [];
   state.residentNames = [];
   renderResidentOptions();
+  renderEpaResidentOptions();
   clearEditMode();
+  clearEpaEditMode();
   localStorage.removeItem("preceptoria.preceptorName");
   localStorage.removeItem("preceptoria.preceptorEmail");
   localStorage.removeItem("preceptoria.preceptorUnit");
@@ -539,6 +632,7 @@ function setLoggedOut() {
   els.loginPanel.classList.remove("is-hidden");
   els.recordPanel.classList.add("is-hidden");
   els.historyPanel.classList.add("is-hidden");
+  els.epaPanel.classList.add("is-hidden");
   els.preceptorUnit.value = "";
   els.preceptorName.focus();
 }
@@ -588,6 +682,27 @@ function setResidentYear(value) {
   renderResidentOptions();
 }
 
+function setEpaResidentYear(value) {
+  const selectedYear = String(value || "");
+  els.epaResidentYear.value = selectedYear;
+  els.epaResidentYearButtons.forEach((button) => {
+    const isSelected = button.dataset.epaResidentYear === selectedYear;
+    button.classList.toggle("is-active", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+  });
+  renderEpaResidentOptions();
+}
+
+function setEpaProgressLevel(value) {
+  const selectedLevel = String(value || "");
+  els.epaProgressLevel.value = selectedLevel;
+  els.epaLevelButtons.forEach((button) => {
+    const isSelected = button.dataset.epaLevel === selectedLevel;
+    button.classList.toggle("is-active", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+  });
+}
+
 function clearEditMode() {
   state.editingId = "";
   els.recordId.value = "";
@@ -597,6 +712,18 @@ function clearEditMode() {
   els.recordFormTitle.textContent = "Atividade realizada";
   els.submitRecord.textContent = "Registrar atividade";
   els.cancelEdit.classList.add("is-hidden");
+}
+
+function clearEpaEditMode() {
+  state.epaEditingId = "";
+  els.epaProgressForm.reset();
+  els.epaProgressId.value = "";
+  els.epaProgressDate.value = todayInputValue();
+  setEpaResidentYear("");
+  renderEpaResidentOptions("");
+  setEpaProgressLevel("");
+  els.submitEpaProgress.textContent = "Registrar avaliação EPA";
+  els.cancelEpaEdit.classList.add("is-hidden");
 }
 
 function startEdit(recordId) {
@@ -617,6 +744,26 @@ function startEdit(recordId) {
   setMessage(els.formMessage, "");
   showView("diary");
   els.recordPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function startEpaEdit(progressId) {
+  const item = state.epaProgress.find((record) => record.id === progressId);
+  if (!item) return;
+
+  state.epaEditingId = item.id;
+  els.epaProgressId.value = item.id;
+  els.epaProgressDate.value = getRecordDateKey(item.progressDate) || todayInputValue();
+  setEpaResidentYear(item.residentYear || "");
+  renderEpaResidentOptions(item.residentName || "");
+  setSelectValue(els.epaProgressSelect, item.epa);
+  setEpaProgressLevel(item.progressLevel || "");
+  els.epaProgressNotes.value = item.notes || "";
+  els.epaProgressNextSteps.value = item.nextSteps || "";
+  els.submitEpaProgress.textContent = "Salvar avaliação EPA";
+  els.cancelEpaEdit.classList.remove("is-hidden");
+  setMessage(els.epaFormMessage, "");
+  showView("epa");
+  els.epaPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderStats() {
@@ -773,6 +920,185 @@ function renderHistory() {
   renderStats();
 }
 
+function filteredEpaProgress() {
+  const term = state.epaFilter.trim().toLowerCase();
+  const filters = state.epaFilters;
+
+  return state.epaProgress.filter((item) => {
+    const matchesTerm = !term || [item.preceptorName, item.unit, item.residentYear, item.residentName, item.epa, item.progressLevel, item.notes, item.nextSteps]
+      .map((value) => String(value || "").toLowerCase())
+      .some((value) => value.includes(term));
+
+    const matchesResident = !filters.resident || item.residentName === filters.resident;
+    const matchesEpa = !filters.epa || item.epa === filters.epa;
+    const matchesLevel = !filters.level || item.progressLevel === filters.level;
+
+    return matchesTerm && matchesResident && matchesEpa && matchesLevel;
+  });
+}
+
+function renderEpaFilterOptions() {
+  const currentResident = els.epaResidentFilter.value;
+  const currentEpa = els.epaCatalogFilter.value;
+  const residents = state.epaProgress.map((item) => item.residentName).filter(Boolean);
+  const epas = [...state.epaCatalog, ...state.epaProgress.map((item) => item.epa).filter(Boolean)];
+
+  fillSelect(els.epaResidentFilter, residents, "Todos");
+  fillSelect(els.epaCatalogFilter, epas, "Todas");
+
+  els.epaResidentFilter.value = residents.includes(currentResident) ? currentResident : "";
+  els.epaCatalogFilter.value = epas.includes(currentEpa) ? currentEpa : "";
+  state.epaFilters.resident = els.epaResidentFilter.value;
+  state.epaFilters.epa = els.epaCatalogFilter.value;
+}
+
+function renderEpaStats() {
+  const residents = new Set(state.epaProgress.map((item) => item.residentName).filter(Boolean));
+  const last = state.epaProgress[0]?.progressDate;
+
+  els.epaTotalCount.textContent = state.epaProgress.length;
+  els.epaResidentCount.textContent = residents.size;
+  els.epaLastDate.textContent = last ? formatDateOnly(last) : "-";
+}
+
+function renderEpaSummary(rows) {
+  els.epaSummaryList.innerHTML = "";
+  const byResident = new Map();
+
+  rows.forEach((item) => {
+    const resident = item.residentName || "Residente não informado";
+    if (!byResident.has(resident)) byResident.set(resident, []);
+    byResident.get(resident).push(item);
+  });
+
+  [...byResident.entries()]
+    .slice(0, 6)
+    .forEach(([resident, items]) => {
+      const latest = items[0];
+      const card = document.createElement("article");
+      card.className = "epa-summary-card";
+
+      const title = document.createElement("strong");
+      title.textContent = resident;
+
+      const details = document.createElement("span");
+      details.textContent = `${items.length} avaliação(ões). Último nível: ${latest.progressLevel || "-"} em ${formatDateOnly(latest.progressDate)}.`;
+
+      card.append(title, details);
+      els.epaSummaryList.appendChild(card);
+    });
+}
+
+function buildEpaProgressText(item) {
+  return [
+    `Residente: ${item.residentName || "-"}`,
+    `Ano: ${item.residentYear || "-"}`,
+    `Data: ${formatDate(item.progressDate)}`,
+    `Preceptor: ${item.preceptorName || "-"}`,
+    `Unidade: ${item.unit || "-"}`,
+    `EPA: ${item.epa || "-"}`,
+    `Nível de progressão: ${item.progressLevel || "-"}`,
+    "",
+    "Registro da avaliação:",
+    item.notes || "-",
+    "",
+    "Próximos passos:",
+    item.nextSteps || "-",
+  ].join("\n");
+}
+
+async function copyEpaProgress(progressId, button) {
+  const item = state.epaProgress.find((record) => record.id === progressId);
+  if (!item) return;
+
+  await copyTextToClipboard(buildEpaProgressText(item));
+  const originalText = button.textContent;
+  button.textContent = "Copiado";
+  button.disabled = true;
+  window.setTimeout(() => {
+    button.textContent = originalText;
+    button.disabled = false;
+  }, 1200);
+}
+
+function renderEpaCard(item) {
+  const card = document.createElement("article");
+  card.className = "history-card";
+
+  const header = document.createElement("div");
+  header.className = "history-card-header";
+
+  const titleWrap = document.createElement("div");
+  const date = document.createElement("span");
+  date.className = "history-card-date";
+  date.textContent = formatDate(item.progressDate);
+  const title = document.createElement("h3");
+  title.textContent = item.residentName || "Residente não informado";
+  titleWrap.append(date, title);
+
+  const level = document.createElement("span");
+  level.className = "history-card-year level";
+  level.textContent = item.progressLevel || "-";
+
+  header.append(titleWrap, level);
+  card.appendChild(header);
+
+  const meta = document.createElement("div");
+  meta.className = "history-card-meta";
+  [
+    ["Ano", item.residentYear || "-"],
+    ["Preceptor", item.preceptorName || "-"],
+    ["Unidade", item.unit || "-"],
+    ["EPA", item.epa || "-"],
+  ].forEach(([label, value]) => {
+    const line = document.createElement("span");
+    const strong = document.createElement("strong");
+    strong.textContent = `${label}: `;
+    line.append(strong, document.createTextNode(value));
+    meta.appendChild(line);
+  });
+  card.appendChild(meta);
+
+  const notes = document.createElement("p");
+  notes.className = "history-card-description";
+  notes.textContent = item.notes || "Sem registro da avaliação.";
+  card.appendChild(notes);
+
+  if (item.nextSteps) {
+    const nextSteps = document.createElement("p");
+    nextSteps.className = "history-card-description";
+    nextSteps.textContent = `Próximos passos: ${item.nextSteps}`;
+    card.appendChild(nextSteps);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "row-actions";
+  actions.append(createActionButton("Copiar", "copy-epa", item.id));
+  if (item.preceptorEmail === state.preceptorEmail) {
+    actions.append(
+      createActionButton("Editar", "edit-epa", item.id),
+      createActionButton("Excluir", "delete-epa", item.id, true),
+    );
+  }
+  card.appendChild(actions);
+
+  return card;
+}
+
+function renderEpaProgress() {
+  const rows = filteredEpaProgress();
+  els.epaCards.innerHTML = "";
+  els.epaResultsCount.textContent = `Mostrando ${rows.length} de ${state.epaProgress.length} avaliações`;
+
+  rows.forEach((item) => {
+    els.epaCards.appendChild(renderEpaCard(item));
+  });
+
+  renderEpaSummary(rows);
+  els.epaPanel.classList.toggle("is-empty", rows.length === 0);
+  renderEpaStats();
+}
+
 function createActionButton(label, action, id, danger = false) {
   const button = document.createElement("button");
   button.className = danger ? "text-button danger" : "text-button";
@@ -786,9 +1112,12 @@ function createActionButton(label, action, id, danger = false) {
 async function loadOptions() {
   fillSelect(els.activity, DEFAULT_ACTIVITY_OPTIONS, "Selecione a atividade");
   fillMultiSelect(diaryEpaControl, DEFAULT_EPA_OPTIONS);
+  state.epaCatalog = [...DEFAULT_EPA_OPTIONS];
+  fillEpaSelect();
   state.unitNames = [...DEFAULT_UNIT_OPTIONS];
   renderUnitOptions();
   renderResidentOptions();
+  renderEpaResidentOptions();
 
   try {
     const optionParams = {
@@ -798,8 +1127,10 @@ async function loadOptions() {
     const data = await apiGet(optionParams);
     const activities = data.activities?.length ? data.activities : DEFAULT_ACTIVITY_OPTIONS;
     const epas = [...DEFAULT_EPA_OPTIONS, ...(data.epas || [])];
+    state.epaCatalog = data.epaCatalog?.length ? data.epaCatalog : epas;
     fillSelect(els.activity, activities, "Selecione a atividade");
     fillMultiSelect(diaryEpaControl, epas);
+    fillEpaSelect();
     state.residentDirectory = Array.isArray(data.residents)
       ? data.residents.map(normalizeResidentItem).filter((item) => item.name)
       : [];
@@ -808,6 +1139,7 @@ async function loadOptions() {
       .sort((a, b) => a.localeCompare(b, "pt-BR"));
     renderUnitOptions();
     renderResidentOptions();
+    renderEpaResidentOptions();
   } catch (error) {
     console.warn(error);
   }
@@ -849,6 +1181,35 @@ async function loadHistory() {
     setMessage(els.formMessage, error.message, "error");
   } finally {
     els.refreshHistory.disabled = false;
+  }
+}
+
+async function loadEpaProgress() {
+  if (!state.preceptorEmail) return;
+  els.refreshEpa.disabled = true;
+
+  try {
+    const data = await apiGet({
+      action: "epaprogress",
+      preceptorName: state.preceptorName,
+      preceptorEmail: state.preceptorEmail,
+      preceptorUnit: state.preceptorUnit,
+    });
+    if (data.unit) {
+      state.preceptorUnit = normalizeUnit(data.unit);
+      localStorage.setItem("preceptoria.preceptorUnit", state.preceptorUnit);
+      renderUnitOptions(state.preceptorUnit);
+      updateActivePreceptorLabel();
+      renderResidentOptions();
+      renderEpaResidentOptions();
+    }
+    state.epaProgress = Array.isArray(data.records) ? data.records : [];
+    renderEpaFilterOptions();
+    renderEpaProgress();
+  } catch (error) {
+    setMessage(els.epaFormMessage, error.message, "error");
+  } finally {
+    els.refreshEpa.disabled = false;
   }
 }
 
@@ -917,6 +1278,61 @@ async function deleteRecord(recordId) {
   }
 }
 
+async function saveEpaProgress(formData) {
+  els.submitEpaProgress.disabled = true;
+  const isEditing = Boolean(formData.get("progressId"));
+  setMessage(els.epaFormMessage, isEditing ? "Salvando avaliação..." : "Registrando avaliação...");
+
+  try {
+    await apiPost({
+      action: isEditing ? "updateepaprogress" : "createepaprogress",
+      progressId: formData.get("progressId"),
+      preceptorName: state.preceptorName,
+      preceptorEmail: state.preceptorEmail,
+      preceptorUnit: state.preceptorUnit,
+      progressDate: formData.get("progressDate"),
+      residentYear: formData.get("residentYear"),
+      residentName: formData.get("residentName"),
+      epa: formData.get("epa"),
+      progressLevel: formData.get("progressLevel"),
+      notes: formData.get("notes"),
+      nextSteps: formData.get("nextSteps"),
+    });
+
+    rememberResidentNames([formData.get("residentName")]);
+    clearEpaEditMode();
+    setMessage(els.epaFormMessage, isEditing ? "Avaliação EPA atualizada com sucesso." : "Avaliação EPA registrada com sucesso.", "success");
+    await loadEpaProgress();
+  } catch (error) {
+    setMessage(els.epaFormMessage, error.message, "error");
+  } finally {
+    els.submitEpaProgress.disabled = false;
+  }
+}
+
+async function deleteEpaProgress(progressId) {
+  if (!progressId) return;
+  const confirmed = window.confirm("Excluir esta avaliação EPA?");
+  if (!confirmed) return;
+
+  setMessage(els.epaFormMessage, "Excluindo avaliação...");
+
+  try {
+    await apiPost({
+      action: "deleteepaprogress",
+      progressId,
+      preceptorEmail: state.preceptorEmail,
+    });
+
+    if (state.epaEditingId === progressId) clearEpaEditMode();
+
+    setMessage(els.epaFormMessage, "Avaliação EPA excluída com sucesso.", "success");
+    await loadEpaProgress();
+  } catch (error) {
+    setMessage(els.epaFormMessage, error.message, "error");
+  }
+}
+
 els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const preceptorName = normalizeName(new FormData(els.loginForm).get("preceptorName"));
@@ -925,7 +1341,8 @@ els.loginForm.addEventListener("submit", async (event) => {
   if (!preceptorName || !preceptorEmail) return;
   setLoggedIn(preceptorName, preceptorEmail, preceptorUnit);
   setMessage(els.formMessage, "");
-  await Promise.all([loadOptions(), loadHistory()]);
+  await loadOptions();
+  await Promise.all([loadHistory(), loadEpaProgress()]);
 });
 
 els.tabButtons.forEach((button) => {
@@ -938,12 +1355,25 @@ els.recordForm.addEventListener("submit", (event) => {
   saveRecord(new FormData(els.recordForm));
 });
 
+els.epaProgressForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  syncEpaResidentNameFromControls();
+  saveEpaProgress(new FormData(els.epaProgressForm));
+});
+
 els.residentSelect.addEventListener("change", () => {
   syncResidentNameFromControls();
   if (els.residentSelect.value === "__other__") els.residentOtherName.focus();
 });
 
 els.residentOtherName.addEventListener("input", syncResidentNameFromControls);
+
+els.epaResidentSelect.addEventListener("change", () => {
+  syncEpaResidentNameFromControls();
+  if (els.epaResidentSelect.value === "__other__") els.epaResidentOtherName.focus();
+});
+
+els.epaResidentOtherName.addEventListener("input", syncEpaResidentNameFromControls);
 
 els.residentYearButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -952,8 +1382,23 @@ els.residentYearButtons.forEach((button) => {
   });
 });
 
+els.epaResidentYearButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextValue = els.epaResidentYear.value === button.dataset.epaResidentYear ? "" : button.dataset.epaResidentYear;
+    setEpaResidentYear(nextValue);
+  });
+});
+
+els.epaLevelButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const nextValue = els.epaProgressLevel.value === button.dataset.epaLevel ? "" : button.dataset.epaLevel;
+    setEpaProgressLevel(nextValue);
+  });
+});
+
 els.changePreceptor.addEventListener("click", setLoggedOut);
 els.refreshHistory.addEventListener("click", loadHistory);
+els.refreshEpa.addEventListener("click", loadEpaProgress);
 
 els.cancelEdit.addEventListener("click", () => {
   els.recordForm.reset();
@@ -963,6 +1408,11 @@ els.cancelEdit.addEventListener("click", () => {
   setMultiSelectValues(diaryEpaControl, []);
   clearEditMode();
   setMessage(els.formMessage, "");
+});
+
+els.cancelEpaEdit.addEventListener("click", () => {
+  clearEpaEditMode();
+  setMessage(els.epaFormMessage, "");
 });
 
 function handleHistoryAction(event) {
@@ -976,6 +1426,17 @@ function handleHistoryAction(event) {
 
 els.historyBody.addEventListener("click", handleHistoryAction);
 els.historyCards.addEventListener("click", handleHistoryAction);
+
+function handleEpaAction(event) {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  if (button.dataset.action === "edit-epa") startEpaEdit(button.dataset.id);
+  if (button.dataset.action === "delete-epa") deleteEpaProgress(button.dataset.id);
+  if (button.dataset.action === "copy-epa") copyEpaProgress(button.dataset.id, button);
+}
+
+els.epaCards.addEventListener("click", handleEpaAction);
 
 els.activity.addEventListener("change", () => {
   const linkedEpa = state.activityEpaMap.get(els.activity.value);
@@ -1036,10 +1497,45 @@ els.clearHistoryFilters.addEventListener("click", () => {
   renderHistory();
 });
 
+els.epaFilterInput.addEventListener("input", (event) => {
+  state.epaFilter = event.target.value;
+  renderEpaProgress();
+});
+
+els.epaResidentFilter.addEventListener("change", (event) => {
+  state.epaFilters.resident = event.target.value;
+  renderEpaProgress();
+});
+
+els.epaCatalogFilter.addEventListener("change", (event) => {
+  state.epaFilters.epa = event.target.value;
+  renderEpaProgress();
+});
+
+els.epaLevelFilter.addEventListener("change", (event) => {
+  state.epaFilters.level = event.target.value;
+  renderEpaProgress();
+});
+
+els.clearEpaFilters.addEventListener("click", () => {
+  state.epaFilter = "";
+  state.epaFilters = {
+    resident: "",
+    epa: "",
+    level: "",
+  };
+  els.epaFilterInput.value = "";
+  els.epaResidentFilter.value = "";
+  els.epaCatalogFilter.value = "";
+  els.epaLevelFilter.value = "";
+  renderEpaProgress();
+});
+
 async function initializeApp() {
   localStorage.removeItem("preceptoria.unitNames");
   await loadOptions();
   setActivityDate();
+  els.epaProgressDate.value = todayInputValue();
 
   if (state.preceptorUnit && !state.unitNames.includes(state.preceptorUnit)) {
     state.preceptorUnit = "";
@@ -1048,7 +1544,7 @@ async function initializeApp() {
 
   if (state.preceptorName && state.preceptorEmail && state.preceptorUnit) {
     setLoggedIn(state.preceptorName, state.preceptorEmail, state.preceptorUnit);
-    await loadHistory();
+    await Promise.all([loadHistory(), loadEpaProgress()]);
   } else {
     els.preceptorName.value = state.preceptorName;
     els.preceptorEmail.value = state.preceptorEmail;
