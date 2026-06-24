@@ -26,7 +26,7 @@
       <nav class="view-tabs is-hidden" id="view-tabs" aria-label="Áreas do aplicativo">
         <button class="tab-button is-active" type="button" data-view="diary">Diário</button>
         <button class="tab-button" type="button" data-view="history">Histórico</button>
-        <button class="tab-button" type="button" data-view="epa">EPA</button>
+        <button class="tab-button" type="button" data-view="epa">Painel das EPAS</button>
       </nav>
 
       <section class="content-grid single-view app-view" id="diary-view" aria-label="Área de registro">
@@ -232,6 +232,7 @@
             <div>
               <p class="eyebrow">Acompanhamento</p>
               <h2>Painel EPA</h2>
+              <p class="panel-note">Use esta aba para documentar as atribuições de confiança dos residentes dentro das subtarefas das EPAs.</p>
             </div>
             <button class="icon-button" id="refresh-epa" type="button" aria-label="Atualizar acompanhamento EPA" title="Atualizar acompanhamento EPA">
               <span aria-hidden="true">⟳</span>
@@ -289,14 +290,21 @@
             </div>
 
             <div class="field">
+              <label for="epa-task-select">Subtarefa avaliada</label>
+              <select id="epa-task-select" name="epaTask">
+                <option value="">Selecione primeiro uma EPA</option>
+              </select>
+            </div>
+
+            <div class="field">
               <label for="epa-progress-level">Nível de progressão</label>
               <input id="epa-progress-level" name="progressLevel" type="hidden">
               <div class="level-control" aria-label="Nível de progressão EPA">
-                <button class="level-button" type="button" data-epa-level="1">1</button>
-                <button class="level-button" type="button" data-epa-level="2">2</button>
-                <button class="level-button" type="button" data-epa-level="3">3</button>
-                <button class="level-button" type="button" data-epa-level="4">4</button>
-                <button class="level-button" type="button" data-epa-level="5">5</button>
+                <button class="level-button" type="button" data-epa-level="Não faz">Não faz</button>
+                <button class="level-button" type="button" data-epa-level="Faz com supervisão direta">Faz com supervisão direta</button>
+                <button class="level-button" type="button" data-epa-level="Faz com supervisão indireta">Faz com supervisão indireta</button>
+                <button class="level-button" type="button" data-epa-level="Faz sozinho">Faz sozinho</button>
+                <button class="level-button" type="button" data-epa-level="Consegue ensinar/supervisionar">Consegue ensinar/supervisionar</button>
               </div>
             </div>
 
@@ -339,11 +347,11 @@
                 <label for="epa-level-filter">Nível</label>
                 <select id="epa-level-filter">
                   <option value="">Todos</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                  <option value="4">4</option>
-                  <option value="5">5</option>
+                  <option value="Não faz">Não faz</option>
+                  <option value="Faz com supervisão direta">Faz com supervisão direta</option>
+                  <option value="Faz com supervisão indireta">Faz com supervisão indireta</option>
+                  <option value="Faz sozinho">Faz sozinho</option>
+                  <option value="Consegue ensinar/supervisionar">Consegue ensinar/supervisionar</option>
                 </select>
               </div>
               <button class="button secondary filter-clear" id="clear-epa-filters" type="button">Limpar filtros</button>
