@@ -1,8 +1,9 @@
 const CONFIG = {
-  SPREADSHEET_ID: "COLE_AQUI_O_ID_DA_SUA_PLANILHA",
+  SPREADSHEET_ID: "1BKUi86G3vKiu0iq9vTjGlXGlAmhS5Ckm2jvGfXCTpkE",
   REGISTRO_SHEET_NAME: "Registo do Preceptor",
   PROGRAMACAO_SHEET_NAME: "Programação de Atividades",
   PRECEPTORES_SHEET_NAME: "Cadastro de Preceptores",
+  RESIDENTES_SHEET_NAME: "Cadastro de Residentes",
   BASE_SHEET_NAME: "Base de Dados das Atividades",
   TIMEZONE: "America/Sao_Paulo",
 };
@@ -132,6 +133,25 @@ const PRECEPTOR_FIELDS = {
   profile: ["perfil", "função", "funcao"],
 };
 
+const PRECEPTOR_HEADERS = [
+  "Nome do Preceptor",
+  "E-mail do Preceptor",
+  "Unidade",
+  "Perfil",
+];
+
+const RESIDENT_FIELDS = {
+  residentName: ["nome do residente", "residente", "nome"],
+  residentYear: ["ano do residente", "ano residente", "ano"],
+  unit: ["unidade", "unidade de saude", "unidade de saúde", "unidade original"],
+};
+
+const RESIDENT_HEADERS = [
+  "Nome do Residente",
+  "Ano do Residente",
+  "Unidade",
+];
+
 function doGet(e) {
   try {
     const action = String(e.parameter.action || "history").toLowerCase();
@@ -139,7 +159,7 @@ function doGet(e) {
     if (action === "history") {
       const preceptorEmail = normalizeEmail_(e.parameter.preceptorEmail);
       validateEmail_(preceptorEmail);
-      const profile = getRequiredPreceptorProfile_(preceptorEmail, e.parameter.preceptorUnit);
+      const profile = getRequiredPreceptorProfile_(preceptorEmail, e.parameter.preceptorUnit, e.parameter.preceptorName);
       const result = getHistory_(preceptorEmail, {
         scope: String(e.parameter.scope || "mine").toLowerCase(),
         profile,
@@ -150,12 +170,12 @@ function doGet(e) {
     if (action === "schedule") {
       const preceptorEmail = normalizeEmail_(e.parameter.preceptorEmail);
       validateEmail_(preceptorEmail);
-      const profile = getRequiredPreceptorProfile_(preceptorEmail);
+      const profile = getRequiredPreceptorProfile_(preceptorEmail, e.parameter.preceptorUnit, e.parameter.preceptorName);
       return json_({ ok: true, unit: profile.unit, profile, items: getSchedule_(preceptorEmail) });
     }
 
     if (action === "options") {
-      return json_({ ok: true, ...getOptions_() });
+      return json_({ ok: true, ...getOptions_(e.parameter.preceptorUnit) });
     }
 
     return json_({ ok: false, error: "Ação inválida." });
@@ -170,7 +190,7 @@ function doPost(e) {
     const action = String(payload.action || "create").toLowerCase();
     const preceptorEmail = normalizeEmail_(payload.preceptorEmail);
     validateEmail_(preceptorEmail);
-    const profile = getRequiredPreceptorProfile_(preceptorEmail, payload.preceptorUnit);
+    const profile = getRequiredPreceptorProfile_(preceptorEmail, payload.preceptorUnit, payload.preceptorName);
 
     if (action === "delete") {
       deleteRecord_(required_(payload.recordId, "Informe o ID do registro."), preceptorEmail);
@@ -221,7 +241,7 @@ function doPost(e) {
 function buildRecordPayload_(payload, preceptorName, preceptorEmail, preceptorUnit, withId) {
   return {
     id: withId ? Utilities.getUuid() : "",
-    timestamp: new Date(),
+    timestamp: parseActivityDate_(payload.activityDate),
     preceptorName,
     preceptorEmail,
     unit: preceptorUnit,
@@ -280,6 +300,7 @@ function updateRecord_(record) {
   const sheet = location.sheet;
   const row = sheet.getRange(rowNumber, 1, 1, sheet.getLastColumn()).getValues()[0];
 
+  row[map.timestamp] = record.timestamp;
   row[map.preceptorName] = record.preceptorName;
   row[map.preceptorEmail] = record.preceptorEmail;
   row[map.unit] = record.unit;
@@ -462,13 +483,31 @@ function getSchedule_(preceptorEmail) {
     .sort((a, b) => `${a.plannedDate || "9999-12-31"} ${a.plannedTime || "23:59"}`.localeCompare(`${b.plannedDate || "9999-12-31"} ${b.plannedTime || "23:59"}`));
 }
 
-function getOptions_() {
+function getOptions_(preceptorUnit) {
+  const residents = getResidentOptions_(preceptorUnit);
+  const units = getUnitOptions_();
   const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   const sheet = spreadsheet.getSheetByName(CONFIG.BASE_SHEET_NAME);
-  if (!sheet) return { activities: DEFAULT_ACTIVITY_OPTIONS, epas: DEFAULT_EPA_OPTIONS, units: getUnitOptions_() };
+  if (!sheet) {
+    return {
+      activities: DEFAULT_ACTIVITY_OPTIONS,
+      epas: DEFAULT_EPA_OPTIONS,
+      activityEpaLinks: [],
+      units,
+      residents,
+    };
+  }
 
   const values = sheet.getDataRange().getValues();
-  if (values.length < 2) return { activities: DEFAULT_ACTIVITY_OPTIONS, epas: DEFAULT_EPA_OPTIONS, units: getUnitOptions_() };
+  if (values.length < 2) {
+    return {
+      activities: DEFAULT_ACTIVITY_OPTIONS,
+      epas: DEFAULT_EPA_OPTIONS,
+      activityEpaLinks: [],
+      units,
+      residents,
+    };
+  }
 
   const headers = values[0];
   const map = buildOptionalHeaderMap_(headers, BASE_FIELDS);
@@ -489,7 +528,8 @@ function getOptions_() {
     activities: activities.length ? unique_(activities) : DEFAULT_ACTIVITY_OPTIONS,
     epas: unique_([...DEFAULT_EPA_OPTIONS, ...epas]),
     activityEpaLinks: uniqueLinks_(activityEpaLinks),
-    units: getUnitOptions_(),
+    units,
+    residents,
   };
 }
 
@@ -521,10 +561,73 @@ function getScheduleSheet_() {
   return sheet;
 }
 
-function getPreceptorProfile_(preceptorEmail) {
+function getPreceptorSheet_() {
   const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  const sheet = spreadsheet.getSheetByName(CONFIG.PRECEPTORES_SHEET_NAME);
-  if (!sheet) return {};
+  let sheet = spreadsheet.getSheetByName(CONFIG.PRECEPTORES_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(CONFIG.PRECEPTORES_SHEET_NAME);
+    sheet.getRange(1, 1, 1, PRECEPTOR_HEADERS.length).setValues([PRECEPTOR_HEADERS]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  ensureHeaders_(sheet, PRECEPTOR_HEADERS);
+  return sheet;
+}
+
+function getResidentSheet_() {
+  const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  let sheet = spreadsheet.getSheetByName(CONFIG.RESIDENTES_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(CONFIG.RESIDENTES_SHEET_NAME);
+    sheet.getRange(1, 1, 1, RESIDENT_HEADERS.length).setValues([RESIDENT_HEADERS]);
+    sheet.setFrozenRows(1);
+    return sheet;
+  }
+
+  ensureHeaders_(sheet, RESIDENT_HEADERS);
+  return sheet;
+}
+
+function getResidentOptions_(preceptorUnit) {
+  const unit = normalizeUnit_(preceptorUnit);
+  if (!unit) return [];
+
+  const sheet = getResidentSheet_();
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return [];
+
+  const map = buildOptionalHeaderMap_(values[0], RESIDENT_FIELDS);
+  if (map.residentName === undefined) return [];
+
+  const residents = values
+    .slice(1)
+    .map((row) => ({
+      name: normalizeName_(row[map.residentName]),
+      year: map.residentYear !== undefined ? normalizeResidentYear_(row[map.residentYear]) : "",
+      unit: map.unit !== undefined ? normalizeUnit_(row[map.unit]) : "",
+    }))
+    .filter((item) => item.name)
+    .filter((item) => !item.unit || item.unit === unit);
+
+  const seen = new Set();
+  return residents
+    .filter((item) => {
+      const key = `${item.name}|${item.year}|${item.unit}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((a, b) => {
+      const yearCompare = a.year.localeCompare(b.year, "pt-BR", { numeric: true });
+      return yearCompare || a.name.localeCompare(b.name, "pt-BR");
+    });
+}
+
+function getPreceptorProfile_(preceptorEmail) {
+  const sheet = getPreceptorSheet_();
 
   const values = sheet.getDataRange().getValues();
   if (values.length < 2) return {};
@@ -545,13 +648,25 @@ function getPreceptorProfile_(preceptorEmail) {
   };
 }
 
-function getRequiredPreceptorProfile_(preceptorEmail, selectedUnit) {
+function getRequiredPreceptorProfile_(preceptorEmail, selectedUnit, preceptorName) {
   const profile = getPreceptorProfile_(preceptorEmail);
-  if (!profile.email || !profile.unit) {
-    throw new Error("E-mail não encontrado no Cadastro de Preceptores ou sem unidade cadastrada.");
+  const unit = normalizeUnit_(selectedUnit);
+
+  if (!profile.email) {
+    if (!isKnownUnit_(unit)) {
+      throw new Error("Selecione uma unidade válida para criar o cadastro do preceptor.");
+    }
+    return appendPreceptorProfile_(preceptorEmail, unit, preceptorName);
   }
 
-  const unit = normalizeUnit_(selectedUnit);
+  if (!profile.unit) {
+    if (!isKnownUnit_(unit)) {
+      throw new Error("Este e-mail está no Cadastro de Preceptores, mas está sem unidade cadastrada.");
+    }
+    updatePreceptorUnit_(preceptorEmail, unit, preceptorName);
+    return { ...profile, name: normalizeName_(preceptorName) || profile.name, unit };
+  }
+
   if (unit && unit !== profile.unit) {
     throw new Error("A unidade selecionada não corresponde ao cadastro deste e-mail.");
   }
@@ -561,20 +676,60 @@ function getRequiredPreceptorProfile_(preceptorEmail, selectedUnit) {
 
 function getUnitOptions_() {
   const units = [...DEFAULT_UNIT_OPTIONS];
-  const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-  const preceptorSheet = spreadsheet.getSheetByName(CONFIG.PRECEPTORES_SHEET_NAME);
+  const preceptorSheet = getPreceptorSheet_();
 
-  if (preceptorSheet) {
-    const values = preceptorSheet.getDataRange().getValues();
-    if (values.length > 1) {
-      const map = buildOptionalHeaderMap_(values[0], PRECEPTOR_FIELDS);
-      if (map.unit !== undefined) {
-        values.slice(1).forEach((row) => units.push(normalizeUnit_(row[map.unit])));
-      }
+  const values = preceptorSheet.getDataRange().getValues();
+  if (values.length > 1) {
+    const map = buildOptionalHeaderMap_(values[0], PRECEPTOR_FIELDS);
+    if (map.unit !== undefined) {
+      values.slice(1).forEach((row) => units.push(normalizeUnit_(row[map.unit])));
     }
   }
 
   return unique_(units);
+}
+
+function appendPreceptorProfile_(preceptorEmail, unit, preceptorName) {
+  const sheet = getPreceptorSheet_();
+  const headers = getHeaders_(sheet);
+  const map = buildHeaderMap_(headers, PRECEPTOR_FIELDS);
+  const row = new Array(headers.length).fill("");
+
+  row[map.name] = normalizeName_(preceptorName);
+  row[map.email] = preceptorEmail;
+  row[map.unit] = unit;
+  row[map.profile] = "Preceptor";
+
+  sheet.appendRow(row);
+  return {
+    name: row[map.name],
+    email: preceptorEmail,
+    unit,
+    profile: row[map.profile],
+  };
+}
+
+function updatePreceptorUnit_(preceptorEmail, unit, preceptorName) {
+  const sheet = getPreceptorSheet_();
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const map = buildHeaderMap_(headers, PRECEPTOR_FIELDS);
+  const normalizedEmail = normalizeEmail_(preceptorEmail);
+
+  for (let index = 1; index < values.length; index += 1) {
+    const row = values[index];
+    if (normalizeEmail_(row[map.email]) === normalizedEmail) {
+      if (map.name !== undefined && normalizeName_(preceptorName)) row[map.name] = normalizeName_(preceptorName);
+      row[map.unit] = unit;
+      if (map.profile !== undefined && !row[map.profile]) row[map.profile] = "Preceptor";
+      sheet.getRange(index + 1, 1, 1, row.length).setValues([row]);
+      return;
+    }
+  }
+}
+
+function isKnownUnit_(unit) {
+  return DEFAULT_UNIT_OPTIONS.map(normalizeUnit_).includes(normalizeUnit_(unit));
 }
 
 function ensureHeaders_(sheet, requiredHeaders) {
@@ -649,6 +804,20 @@ function optional_(value) {
   return String(value || "").trim();
 }
 
+function parseActivityDate_(value) {
+  const text = optional_(value);
+  if (!text) return new Date();
+
+  const parts = text.split("-").map(Number);
+  if (parts.length === 3 && parts.every(Boolean)) {
+    return new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
+  }
+
+  const date = new Date(text);
+  if (!Number.isNaN(date.getTime())) return date;
+  return new Date();
+}
+
 function validateName_(value, message) {
   if (!value) throw new Error(message);
 }
@@ -664,10 +833,30 @@ function normalizeName_(value) {
 }
 
 function normalizeUnit_(value) {
-  return normalizeName_(value)
+  const unit = normalizeName_(value)
     .replace(/^Centro Municipal de Saúde\s+/i, "CMS ")
     .replace(/^Clinica da Familia\s+/i, "CF ")
     .replace(/^Clínica da Família\s+/i, "CF ");
+  const plain = unit
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (/^pirai\b/.test(plain)) return "Piraí";
+  if (/^tres rios\b/.test(plain)) return "Três Rios";
+  if (/^cabo frio\b/.test(plain)) return "Cabo Frio";
+  if (/^volta redonda\b/.test(plain)) return "Volta Redonda";
+  if (/^paraty\b/.test(plain)) return "Paraty";
+  if (/^ami\b/.test(plain)) return "AMI";
+  if (/^saude da mulher\b/.test(plain)) return "Saúde da Mulher";
+
+  return unit;
+}
+
+function normalizeResidentYear_(value) {
+  const text = normalizeName_(value).toUpperCase();
+  const match = text.match(/\bR[123]\b/);
+  return match ? match[0] : text;
 }
 
 function normalizeEmail_(value) {
