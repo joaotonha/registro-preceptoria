@@ -26,6 +26,7 @@
       <nav class="view-tabs is-hidden" id="view-tabs" aria-label="Áreas do aplicativo">
         <button class="tab-button is-active" type="button" data-view="diary">Diário</button>
         <button class="tab-button" type="button" data-view="history">Histórico</button>
+        <button class="tab-button" type="button" data-view="epa">EPA</button>
       </nav>
 
       <section class="content-grid single-view app-view" id="diary-view" aria-label="Área de registro">
@@ -221,6 +222,141 @@
           <div class="empty-state" id="empty-state">
             <strong>Nenhum registro encontrado.</strong>
             <span>Quando você registrar uma atividade, ela aparecerá aqui.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="content-grid single-view app-view is-hidden" id="epa-view" aria-label="Área de acompanhamento EPA">
+        <div class="panel epa-panel is-hidden" id="epa-panel">
+          <div class="panel-header with-action">
+            <div>
+              <p class="eyebrow">Acompanhamento</p>
+              <h2>Painel EPA</h2>
+            </div>
+            <button class="icon-button" id="refresh-epa" type="button" aria-label="Atualizar acompanhamento EPA" title="Atualizar acompanhamento EPA">
+              <span aria-hidden="true">⟳</span>
+            </button>
+          </div>
+
+          <div class="stats-grid" aria-label="Resumo do acompanhamento EPA">
+            <div class="stat">
+              <span class="stat-value" id="epa-total-count">0</span>
+              <span class="stat-label">avaliações</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="epa-resident-count">0</span>
+              <span class="stat-label">residentes</span>
+            </div>
+            <div class="stat">
+              <span class="stat-value" id="epa-last-date">-</span>
+              <span class="stat-label">última avaliação</span>
+            </div>
+          </div>
+
+          <form id="epa-progress-form" class="form epa-progress-form">
+            <input id="epa-progress-id" name="progressId" type="hidden">
+
+            <div class="field">
+              <label for="epa-progress-date">Data da avaliação</label>
+              <input id="epa-progress-date" name="progressDate" type="date">
+            </div>
+
+            <div class="field">
+              <label for="epa-resident-year">Ano do residente</label>
+              <input id="epa-resident-year" name="residentYear" type="hidden">
+              <div class="segmented-control" aria-label="Ano do residente no acompanhamento EPA">
+                <button class="segment-button" type="button" data-epa-resident-year="R1">R1</button>
+                <button class="segment-button" type="button" data-epa-resident-year="R2">R2</button>
+                <button class="segment-button" type="button" data-epa-resident-year="R3">R3</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="epa-resident-select">Nome do residente</label>
+              <select id="epa-resident-select" autocomplete="off">
+                <option value="">Carregando residentes...</option>
+              </select>
+              <input id="epa-resident-name" name="residentName" type="hidden">
+              <input class="is-hidden" id="epa-resident-other-name" type="text" autocomplete="off" placeholder="Digite o nome completo">
+              <p class="field-hint" id="epa-resident-list-hint">A lista será filtrada pela sua unidade.</p>
+            </div>
+
+            <div class="field">
+              <label for="epa-progress-select">EPA avaliada</label>
+              <select id="epa-progress-select" name="epa">
+                <option value="">Carregando EPAs...</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="epa-progress-level">Nível de progressão</label>
+              <input id="epa-progress-level" name="progressLevel" type="hidden">
+              <div class="level-control" aria-label="Nível de progressão EPA">
+                <button class="level-button" type="button" data-epa-level="1">1</button>
+                <button class="level-button" type="button" data-epa-level="2">2</button>
+                <button class="level-button" type="button" data-epa-level="3">3</button>
+                <button class="level-button" type="button" data-epa-level="4">4</button>
+                <button class="level-button" type="button" data-epa-level="5">5</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="epa-progress-notes">Registro da avaliação</label>
+              <textarea id="epa-progress-notes" name="notes" rows="4" placeholder="Síntese da observação, evidências e combinados"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="epa-progress-next-steps">Próximos passos</label>
+              <textarea id="epa-progress-next-steps" name="nextSteps" rows="3" placeholder="O que acompanhar ou retomar no próximo encontro"></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button class="button primary full" id="submit-epa-progress" type="submit">Registrar avaliação EPA</button>
+              <button class="button secondary full is-hidden" id="cancel-epa-edit" type="button">Cancelar edição</button>
+            </div>
+            <p class="form-message" id="epa-form-message" role="status" aria-live="polite"></p>
+          </form>
+
+          <div class="toolbar epa-toolbar">
+            <div class="search-field">
+              <label class="sr-only" for="epa-filter">Filtrar avaliações EPA</label>
+              <input id="epa-filter" type="search" placeholder="Buscar residente, EPA, avaliação ou próximos passos">
+            </div>
+            <div class="filter-grid epa-filter-grid" aria-label="Filtros do acompanhamento EPA">
+              <div class="field compact-field">
+                <label for="epa-resident-filter">Residente</label>
+                <select id="epa-resident-filter">
+                  <option value="">Todos</option>
+                </select>
+              </div>
+              <div class="field compact-field">
+                <label for="epa-catalog-filter">EPA</label>
+                <select id="epa-catalog-filter">
+                  <option value="">Todas</option>
+                </select>
+              </div>
+              <div class="field compact-field">
+                <label for="epa-level-filter">Nível</label>
+                <select id="epa-level-filter">
+                  <option value="">Todos</option>
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+              <button class="button secondary filter-clear" id="clear-epa-filters" type="button">Limpar filtros</button>
+            </div>
+            <p class="filter-summary" id="epa-results-count">Mostrando 0 avaliações</p>
+          </div>
+
+          <div class="epa-summary-list" id="epa-summary-list"></div>
+          <div class="history-card-list" id="epa-card-list"></div>
+
+          <div class="empty-state" id="epa-empty-state">
+            <strong>Nenhuma avaliação EPA encontrada.</strong>
+            <span>Quando você registrar uma progressão, ela aparecerá aqui.</span>
           </div>
         </div>
       </section>
