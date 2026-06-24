@@ -161,6 +161,14 @@ h2 {
   margin-bottom: 16px;
 }
 
+.panel-note {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
 .with-action {
   align-items: center;
 }
@@ -227,13 +235,17 @@ h2 {
 }
 
 .level-button {
-  min-height: 44px;
+  min-height: 58px;
   border: 0;
   border-radius: 6px;
   background: transparent;
   color: var(--primary-strong);
   cursor: pointer;
+  font-size: 0.78rem;
   font-weight: 900;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  padding: 8px 6px;
 }
 
 .level-button:hover {
@@ -804,6 +816,7 @@ td {
 
   .input-row,
   .date-row,
+  .level-control,
   .filter-grid,
   .epa-filter-grid,
   .epa-summary-list,
