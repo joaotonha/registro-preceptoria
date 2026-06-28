@@ -89,6 +89,7 @@ const state = {
     epa: "",
     level: "",
   },
+  epaSelectedResident: "",
   activityEpaMap: new Map(),
   epaEditingId: "",
   activeView: "diary",
@@ -154,6 +155,7 @@ const els = {
   historyDateStart: document.querySelector("#history-date-start"),
   historyDateEnd: document.querySelector("#history-date-end"),
   clearHistoryFilters: document.querySelector("#clear-history-filters"),
+  copyQuarterFeedback: document.querySelector("#copy-quarter-feedback"),
   historyResultsCount: document.querySelector("#history-results-count"),
   epaCards: document.querySelector("#epa-card-list"),
   epaSummaryList: document.querySelector("#epa-summary-list"),
@@ -471,6 +473,13 @@ function sameMonth(value) {
   if (Number.isNaN(date.getTime())) return false;
   const now = new Date();
   return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+}
+
+function monthsAgo(months) {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  date.setHours(0, 0, 0, 0);
+  return date;
 }
 
 function splitValues(value) {
@@ -818,6 +827,95 @@ function buildFeedbackText(item) {
   ].join("\n");
 }
 
+function getQuarterFeedbackRecords(residentName) {
+  const resident = normalizeName(residentName);
+  const startDate = monthsAgo(4);
+  const endDate = new Date();
+
+  return state.history
+    .filter((item) => normalizeName(item.residentName) === resident)
+    .filter((item) => {
+      const date = new Date(item.timestamp);
+      return !Number.isNaN(date.getTime()) && date >= startDate && date <= endDate;
+    })
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+}
+
+function buildQuarterFeedbackText(residentName) {
+  const records = getQuarterFeedbackRecords(residentName);
+  const startDate = monthsAgo(4);
+  const endDate = new Date();
+  const residentYear = records.find((item) => item.residentYear)?.residentYear || "-";
+
+  const lines = [
+    "Síntese de registros do último quadrimestre",
+    "",
+    `Residente: ${residentName || "-"}`,
+    `Ano: ${residentYear}`,
+    `Período: ${formatDateOnly(startDate)} a ${formatDateOnly(endDate)}`,
+    `Total de registros: ${records.length}`,
+    "",
+  ];
+
+  if (!records.length) {
+    lines.push("Não há registros para este residente no último quadrimestre.");
+  } else {
+    records.forEach((item, index) => {
+      lines.push(
+        `${index + 1}. ${formatDateOnly(item.timestamp)}`,
+        `Preceptor: ${item.preceptorName || "-"}`,
+        `Unidade: ${item.unit || "-"}`,
+        `Atividade: ${item.activity || "-"}`,
+        `EPA(s): ${item.epa || "-"}`,
+        "Registro:",
+        item.description || "-",
+        "",
+      );
+    });
+  }
+
+  lines.push(
+    "Síntese para feedback:",
+    "- Pontos fortes observados:",
+    "- Pontos a desenvolver:",
+    "- Combinados para o próximo período:",
+  );
+
+  return lines.join("\n");
+}
+
+function updateQuarterFeedbackButton() {
+  const residentName = els.historyResidentFilter.value;
+  const records = residentName ? getQuarterFeedbackRecords(residentName) : [];
+  els.copyQuarterFeedback.disabled = !residentName || records.length === 0;
+  els.copyQuarterFeedback.textContent = residentName && records.length
+    ? `Copiar quadrimestre (${records.length})`
+    : "Copiar feedback do quadrimestre";
+}
+
+async function copyQuarterFeedback() {
+  const residentName = els.historyResidentFilter.value;
+  if (!residentName) {
+    setMessage(els.formMessage, "Selecione um residente no filtro do histórico.", "error");
+    return;
+  }
+
+  const records = getQuarterFeedbackRecords(residentName);
+  if (!records.length) {
+    setMessage(els.formMessage, "Não há registros desse residente no último quadrimestre.", "error");
+    return;
+  }
+
+  await copyTextToClipboard(buildQuarterFeedbackText(residentName));
+  const originalText = els.copyQuarterFeedback.textContent;
+  els.copyQuarterFeedback.textContent = "Quadrimestre copiado";
+  els.copyQuarterFeedback.disabled = true;
+  window.setTimeout(() => {
+    updateQuarterFeedbackButton();
+    if (!els.copyQuarterFeedback.disabled) els.copyQuarterFeedback.textContent = originalText;
+  }, 1200);
+}
+
 async function copyTextToClipboard(text) {
   if (navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(text);
@@ -944,9 +1042,11 @@ function renderHistory() {
 
   els.historyPanel.classList.toggle("is-empty", rows.length === 0);
   renderStats();
+  updateQuarterFeedbackButton();
 }
 
-function filteredEpaProgress() {
+function filteredEpaProgress(options = {}) {
+  const includeSelectedResident = options.includeSelectedResident !== false;
   const term = state.epaFilter.trim().toLowerCase();
   const filters = state.epaFilters;
 
@@ -958,8 +1058,9 @@ function filteredEpaProgress() {
     const matchesResident = !filters.resident || item.residentName === filters.resident;
     const matchesEpa = !filters.epa || item.epa === filters.epa;
     const matchesLevel = !filters.level || item.progressLevel === filters.level;
+    const matchesSelectedResident = !includeSelectedResident || !state.epaSelectedResident || item.residentName === state.epaSelectedResident;
 
-    return matchesTerm && matchesResident && matchesEpa && matchesLevel;
+    return matchesTerm && matchesResident && matchesEpa && matchesLevel && matchesSelectedResident;
   });
 }
 
@@ -998,11 +1099,14 @@ function renderEpaSummary(rows) {
   });
 
   [...byResident.entries()]
-    .slice(0, 6)
     .forEach(([resident, items]) => {
       const latest = items[0];
       const card = document.createElement("article");
       card.className = "epa-summary-card";
+      card.classList.toggle("is-active", resident === state.epaSelectedResident);
+      card.dataset.resident = resident;
+      card.role = "button";
+      card.tabIndex = 0;
 
       const title = document.createElement("strong");
       title.textContent = resident;
@@ -1010,7 +1114,11 @@ function renderEpaSummary(rows) {
       const details = document.createElement("span");
       details.textContent = `${items.length} avaliação(ões). Último nível: ${latest.progressLevel || "-"} em ${formatDateOnly(latest.progressDate)}.`;
 
-      card.append(title, details);
+      const hint = document.createElement("span");
+      hint.className = "epa-summary-hint";
+      hint.textContent = resident === state.epaSelectedResident ? "Registros exibidos abaixo." : "Clique para ver os registros.";
+
+      card.append(title, details, hint);
       els.epaSummaryList.appendChild(card);
     });
 }
@@ -1104,16 +1212,23 @@ function renderEpaCard(item) {
 }
 
 function renderEpaProgress() {
-  const rows = filteredEpaProgress();
+  const summaryRows = filteredEpaProgress({ includeSelectedResident: false });
+  if (state.epaSelectedResident && !summaryRows.some((item) => item.residentName === state.epaSelectedResident)) {
+    state.epaSelectedResident = "";
+  }
+
+  const rows = state.epaSelectedResident ? filteredEpaProgress() : [];
   els.epaCards.innerHTML = "";
-  els.epaResultsCount.textContent = `Mostrando ${rows.length} de ${state.epaProgress.length} avaliações`;
+  els.epaResultsCount.textContent = state.epaSelectedResident
+    ? `Mostrando ${rows.length} avaliação(ões) de ${state.epaSelectedResident}`
+    : "Selecione um card de residente para ver os registros.";
 
   rows.forEach((item) => {
     els.epaCards.appendChild(renderEpaCard(item));
   });
 
-  renderEpaSummary(rows);
-  els.epaAppPanel.classList.toggle("is-empty", rows.length === 0);
+  renderEpaSummary(summaryRows);
+  els.epaAppPanel.classList.toggle("is-empty", Boolean(state.epaSelectedResident) && rows.length === 0);
   renderEpaStats();
 }
 
@@ -1426,6 +1541,7 @@ els.epaLevelButtons.forEach((button) => {
 els.changePreceptor.addEventListener("click", setLoggedOut);
 els.refreshHistory.addEventListener("click", loadHistory);
 els.refreshEpa.addEventListener("click", loadEpaProgress);
+els.copyQuarterFeedback.addEventListener("click", copyQuarterFeedback);
 
 els.cancelEdit.addEventListener("click", () => {
   els.recordForm.reset();
@@ -1463,7 +1579,28 @@ function handleEpaAction(event) {
   if (button.dataset.action === "copy-epa") copyEpaProgress(button.dataset.id, button);
 }
 
+function selectEpaSummaryResident(resident) {
+  state.epaSelectedResident = state.epaSelectedResident === resident ? "" : resident;
+  renderEpaProgress();
+}
+
+function handleEpaSummarySelection(event) {
+  const card = event.target.closest(".epa-summary-card[data-resident]");
+  if (!card) return;
+  selectEpaSummaryResident(card.dataset.resident);
+}
+
+function handleEpaSummaryKeyboard(event) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const card = event.target.closest(".epa-summary-card[data-resident]");
+  if (!card) return;
+  event.preventDefault();
+  selectEpaSummaryResident(card.dataset.resident);
+}
+
 els.epaCards.addEventListener("click", handleEpaAction);
+els.epaSummaryList.addEventListener("click", handleEpaSummarySelection);
+els.epaSummaryList.addEventListener("keydown", handleEpaSummaryKeyboard);
 
 els.activity.addEventListener("change", () => {
   const linkedEpa = state.activityEpaMap.get(els.activity.value);
@@ -1528,21 +1665,25 @@ els.clearHistoryFilters.addEventListener("click", () => {
 
 els.epaFilterInput.addEventListener("input", (event) => {
   state.epaFilter = event.target.value;
+  state.epaSelectedResident = "";
   renderEpaProgress();
 });
 
 els.epaResidentFilter.addEventListener("change", (event) => {
   state.epaFilters.resident = event.target.value;
+  state.epaSelectedResident = "";
   renderEpaProgress();
 });
 
 els.epaCatalogFilter.addEventListener("change", (event) => {
   state.epaFilters.epa = event.target.value;
+  state.epaSelectedResident = "";
   renderEpaProgress();
 });
 
 els.epaLevelFilter.addEventListener("change", (event) => {
   state.epaFilters.level = event.target.value;
+  state.epaSelectedResident = "";
   renderEpaProgress();
 });
 
@@ -1553,6 +1694,7 @@ els.clearEpaFilters.addEventListener("click", () => {
     epa: "",
     level: "",
   };
+  state.epaSelectedResident = "";
   els.epaFilterInput.value = "";
   els.epaResidentFilter.value = "";
   els.epaCatalogFilter.value = "";
