@@ -19,16 +19,26 @@
         <div>
           <p class="eyebrow">PRMFC UERJ</p>
           <h1 id="page-title">Diário de Preceptoria</h1>
-          <p class="lede">Registre atividades e acompanhe seu histórico em uma tela rápida para uso no celular.</p>
         </div>
       </section>
 
       <nav class="view-tabs is-hidden" id="view-tabs" aria-label="Áreas do aplicativo">
-        <button class="tab-button is-active" type="button" data-view="diary">Diário</button>
+        <button class="tab-button is-active" type="button" data-view="home">Início</button>
         <button class="tab-button" type="button" data-view="history">Histórico</button>
         <button class="tab-button" type="button" data-view="epa">Painel das EPAS</button>
-        <button class="tab-button" type="button" data-view="practice">Preceptoria na prática</button>
       </nav>
+
+      <section class="app-view home-view is-hidden" id="home-view" aria-labelledby="home-title">
+        <p class="eyebrow">Sua prática, seu acompanhamento</p>
+        <h2 id="home-title" tabindex="-1">O que você deseja fazer <br>hoje como preceptor?</h2>
+        <div class="home-actions">
+          <button class="home-action" type="button" data-home-action="diary"><img src="assets/acao-diario.svg" alt=""><span>Registrar no Diário</span><span class="home-arrow" aria-hidden="true">→</span></button>
+          <button class="home-action" type="button" data-home-action="discuss"><img src="assets/acao-discutir.svg" alt=""><span>Discutir um caso</span><span class="home-arrow" aria-hidden="true">→</span></button>
+          <button class="home-action" type="button" data-home-action="observe"><img src="assets/acao-observar.svg" alt=""><span>Observar uma atividade</span><span class="home-arrow" aria-hidden="true">→</span></button>
+          <button class="home-action" type="button" data-home-action="feedback"><img src="assets/acao-feedback.svg" alt=""><span>Dar feedback</span><span class="home-arrow" aria-hidden="true">→</span></button>
+        </div>
+        <div class="home-account"><span id="home-preceptor"></span><button class="button secondary" id="home-change-preceptor" type="button">Trocar preceptor</button></div>
+      </section>
 
       <section class="content-grid single-view app-view" id="diary-view" aria-label="Área de registro">
         <div class="panel login-panel" id="login-panel">
@@ -61,6 +71,7 @@
         </div>
 
         <div class="panel form-panel is-hidden" id="record-panel">
+          <button class="back-button" type="button" data-back-home>← Início</button>
           <div class="panel-header with-action">
             <div>
               <p class="eyebrow">Novo registro</p>
@@ -169,10 +180,8 @@
             <div class="filter-grid" aria-label="Filtros do histórico">
               <div class="field compact-field">
                 <label for="history-scope">Visualização</label>
-                <select id="history-scope">
-                  <option value="mine">Meus registros</option>
-                  <option value="unit">Minha unidade</option>
-                </select>
+                <input type="hidden" id="history-scope">
+                <div class="choice-buttons" role="group" aria-label="Visualização do histórico"><button type="button" data-history-scope="mine" aria-pressed="true">Meus registros</button><button type="button" data-history-scope="unit" aria-pressed="false">Minha unidade</button></div>
               </div>
               <div class="field compact-field">
                 <label for="history-resident-filter">Residente</label>
@@ -370,12 +379,8 @@
       </section>
 
       <section class="app-view is-hidden" id="practice-view" aria-label="Preceptoria na prática">
-        <h2>O que você deseja fazer agora?</h2>
-        <div class="practice-categories" id="practice-categories" aria-label="Tipo de atividade">
-          <button class="button secondary" type="button" data-category="discuss" aria-pressed="true">Discutir um caso</button>
-          <button class="button secondary" type="button" data-category="observe" aria-pressed="false">Observar uma atividade</button>
-          <button class="button secondary" type="button" data-category="feedback" aria-pressed="false">Dar feedback</button>
-        </div>
+        <button class="back-button" type="button" data-back-home>← Início</button>
+        <h2 id="practice-category-title" tabindex="-1">Discutir um caso</h2>
         <div class="practice-catalog" id="practice-catalog"></div>
         <form class="form practice-form is-hidden" id="practice-form">
           <fieldset id="practice-fields">

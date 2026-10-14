@@ -2,11 +2,20 @@
 
 Site estático para GitHub Pages com formulário de registro e painel de histórico conectado ao Google Sheets por Google Apps Script.
 
-## Atualização: Preceptoria na prática
+## Atualização: nova página inicial e instrumentos de observação
 
-A nova aba reúne One-Minute Preceptor, SNAPPS, Discussão Baseada em Casos (CBD), Mini-CEX, DOPS, Sombra e sombra invertida e Feedback estruturado.
+A primeira tela após a identificação agora é **Início**, com a pergunta **O que você deseja fazer hoje como preceptor?** e quatro botões grandes:
 
-1. Abra a aba **Preceptoria na prática** e escolha uma categoria e um roteiro.
+- **Registrar no Diário:** abre o formulário de atividade.
+- **Discutir um caso:** One-Minute Preceptor, SNAPPS e Discussão Baseada em Casos (CBD).
+- **Observar uma atividade:** Mini-CEX, Calgary-Cambridge, DOPS e Sombra/sombra invertida.
+- **Dar feedback:** abre diretamente o formulário de um novo feedback.
+
+Histórico e Painel das EPAs continuam na navegação principal. A antiga aba Preceptoria na prática foi incorporada ao Início.
+
+Os campos com uma, duas ou três opções disponíveis aparecem como botões. Listas maiores, como unidades e atividades, continuam como listas suspensas. Os botões de avaliação começam sem seleção; clicar novamente na opção selecionada limpa a resposta.
+
+1. No **Início**, escolha uma ação e um instrumento. **Dar feedback** abre seu formulário diretamente.
 2. Selecione data, ano e residente. A lista segue o cadastro da sua unidade.
 3. Preencha as observações que fizerem sentido. Os campos são opcionais.
 4. Selecione as EPAs relacionadas, se desejar.
@@ -15,9 +24,15 @@ A nova aba reúne One-Minute Preceptor, SNAPPS, Discussão Baseada em Casos (CBD
 7. Use **Copiar para enviar ao residente** para colar o registro no WhatsApp ou e-mail. O envio é manual.
 8. O mesmo registro fica disponível no Histórico para copiar, editar ou excluir.
 
-Os roteiros têm referências em **Sobre este método**. Mini-CEX e DOPS são adaptações formativas com descritores locais, não versões validadas dos instrumentos originais. O registro dessas atividades não altera automaticamente os níveis no Painel das EPAS.
+Os instrumentos têm referências em **Sobre este método**:
 
-As anotações ficam na tela enquanto você alterna entre abas. Elas não são um rascunho permanente: salve antes de fechar o navegador. Se houver falha de conexão, o formulário mantém o texto; confira o Histórico antes de repetir o envio.
+- **Mini-CEX:** sete domínios e escala ABIM de 1 a 9, com opção Não observado. Rótulos em português; não apresentado como uma tradução validada independente. De 1 a 3: insatisfatório; de 4 a 6: satisfatório; de 7 a 9: superior. A nota 4 é marginal e requer melhoria.
+- **Calgary-Cambridge:** os 28 itens do apêndice brasileiro de Dohms et al. (2021), organizados em seis seções, com Não / Sim, mas / Sim. Texto e opções preservados do PDF fornecido, com atribuição e referência. Comentários e feedback são campos complementares do diário. Não há soma automática de notas.
+- **DOPS:** checklist local com redação própria, em sete etapas, com Fez / Não fez / Não se aplica. Não é cópia integral do site de referência nem formulário original validado. O procedimento observado e o apoio necessário podem ser descritos nos campos de texto.
+
+Itens sem resposta são distintos de Não fez, Não ou Não se aplica. O registro identifica o instrumento e sua versão, e não altera automaticamente os níveis no Painel das EPAS.
+
+As anotações são preservadas durante a navegação entre Início, formulários e instrumentos na mesma sessão. Elas não são um rascunho permanente: salve antes de fechar ou recarregar o navegador ou trocar de preceptor. Se houver falha de conexão, o formulário mantém o texto; confira o Histórico antes de repetir o envio.
 
 ### Publicar esta atualização: passo a passo detalhado
 
@@ -25,7 +40,7 @@ Os arquivos já estão atualizados neste computador. O site que seus colegas ace
 
 1. No Mac, abra o **Finder** (ícone de rosto azul no Dock).
 2. Abra **Documentos > App Preceptoria**. Essa é a pasta com a versão nova.
-3. Localize estes cinco arquivos: `index.html`, `styles.css`, `script.js`, `preceptoria.js` e `README.md`. O arquivo `preceptoria.js` é novo e precisa ser enviado junto com os demais.
+3. Localize estes cinco arquivos: `index.html`, `styles.css`, `script.js`, `preceptoria.js` e `README.md`. Todos devem ser atualizados juntos. Os novos ícones também precisam ser enviados; veja a etapa abaixo sobre a pasta `assets`.
 4. No navegador, entre em **github.com** com a conta usada para publicar o aplicativo.
 5. Abra o repositório do aplicativo, ou seja, a página que mostra a lista dos arquivos do site. Não crie outro repositório.
 6. Para conferir onde o site é publicado, abra **Settings > Pages**. Se estiver configurado como **Deploy from a branch**, anote a branch e a pasta exibidas. Na configuração inicial deste projeto, usamos `main` e `/(root)`. Não precisa mudar nem salvar essas configurações novamente.
@@ -34,15 +49,25 @@ Os arquivos já estão atualizados neste computador. O site que seus colegas ace
 9. No Finder, selecione apenas os cinco arquivos do passo 3. Segure **Command** enquanto clica em cada um para selecionar vários.
 10. Arraste os cinco arquivos para a área de envio do GitHub. Também é possível clicar em **choose your files** e selecioná-los na janela que abrir. Aguarde aparecerem todos os nomes.
 11. Confira os nomes: o arquivo deve se chamar exatamente `preceptoria.js`, sem `.txt` no final. Envie os arquivos soltos, não a pasta inteira **App Preceptoria**. Os arquivos existentes serão atualizados e o novo será acrescentado. Não precisa apagar nada antes.
-12. No campo de mensagem, escreva **Adicionar Preceptoria na prática**.
+12. No campo de mensagem, escreva **Atualizar página inicial e instrumentos de observação**.
 13. Se aparecer a escolha, selecione **Commit directly to the main branch**, caso `main` seja a branch usada pelo site. Isso significa salvar a atualização diretamente nessa versão do projeto. Se sua branch tiver outro nome, use a opção correspondente a ela.
 14. Clique no botão verde **Commit changes** para confirmar o envio.
 15. Abra a aba **Actions** do repositório. Aguarde a execução de publicação do Pages terminar com um sinal verde. Se ficar vermelha, abra a execução para ver a mensagem de erro antes de continuar.
 16. Abra **Settings > Pages** e use o endereço do site ou o botão **Visit site**, quando disponível. Também pode abrir o endereço que você já compartilha com seus colegas.
 17. Recarregue o site. No Chrome do Mac, **Command + Shift + R** força uma atualização dos arquivos. Se ainda aparecer a versão antiga, teste o endereço em uma janela anônima.
-18. Faça sua identificação e confira se aparece a aba **Preceptoria na prática**.
+18. Faça sua identificação e confira se aparece a página **Início** com os quatro botões grandes.
 
-Não envie as planilhas de residentes, arquivos CSV/TSV ou a pasta inteira: esta atualização precisa somente dos cinco arquivos indicados. O logo já publicado continua na pasta `assets`.
+### Enviar os novos ícones para a pasta assets
+
+1. Na aba **Code** do GitHub, abra a pasta **assets**, onde o logo já está publicado.
+2. Clique em **Add file > Upload files** dentro dessa pasta.
+3. No Finder, abra **Documentos > App Preceptoria > assets**.
+4. Selecione estes cinco arquivos: `acao-diario.svg`, `acao-discutir.svg`, `acao-observar.svg`, `acao-feedback.svg` e `LUCIDE-LICENSE`.
+5. Arraste os arquivos soltos para a página de envio. Não arraste outra pasta `assets` para dentro da pasta `assets`.
+6. Escreva **Adicionar ícones da página inicial** e confirme em **Commit changes** na mesma branch de publicação.
+7. Confira que os arquivos aparecem junto ao `logo-prmfc.png`. Aguarde a nova publicação em **Actions** e atualize o site.
+
+Não precisa reenviar ou apagar o logo existente. Não envie planilhas de residentes, arquivos CSV/TSV, a pasta `referencias` ou a pasta inteira do projeto. Os arquivos de referências são de consulta local, não dependências do aplicativo.
 
 Se em **Settings > Pages** estiver escrito **GitHub Actions**, a publicação é controlada por um fluxo próprio; confira a branch usada por esse fluxo antes de enviar. As instruções acima usam a configuração inicial por branch deste projeto.
 
@@ -50,12 +75,12 @@ Referências de publicação: [envio de arquivos no GitHub](https://docs.github.
 
 ### Conferir o funcionamento depois de publicar
 
-1. Abra **Preceptoria na prática > Discutir um caso > One-Minute Preceptor**.
+1. Abra **Início > Discutir um caso > One-Minute Preceptor**.
 2. Selecione residente e data. Registre uma atividade real ou identifique claramente o texto como teste.
 3. Preencha uma observação, clique em **Revisar registro** e depois em **Salvar no Diário**.
 4. Aguarde a mensagem de sucesso. Clique em **Copiar para enviar ao residente** e cole em um editor de texto para conferir; não é necessário enviar a ninguém durante o teste.
 5. Clique em **Ver no Histórico** e confirme que a atividade aparece. Se foi um teste, exclua esse registro pelo próprio histórico.
-6. Caso a aba nova apareça mas não mostre os roteiros, confira se o arquivo `preceptoria.js` foi enviado na mesma pasta de `index.html`.
+6. Confira também **Início > Observar uma atividade**: devem aparecer Mini-CEX, Calgary-Cambridge, DOPS e Sombra/sombra invertida. Os comportamentos devem ter botões de resposta. Se os roteiros não aparecerem, confira se `preceptoria.js` foi enviado na mesma pasta de `index.html`.
 7. Caso haja erro ao salvar, confira se o diário comum também apresenta o erro. Anote a mensagem exata antes de tentar novamente.
 
 Esta atualização usa a aba existente **Registo do Preceptor**. Não é necessário alterar a planilha nem publicar uma nova versão do Apps Script. O nome do método e as respostas ficam no registro descritivo.
@@ -71,7 +96,8 @@ Depois que o Codex fizer uma alteração, ele normalmente vai dizer quais arquiv
 - `index.html`: muda textos, campos, botões e estrutura da tela.
 - `styles.css`: muda cores, tamanhos, espaçamentos e aparência.
 - `script.js`: muda funcionamento do site.
-- `preceptoria.js`: roteiros da aba Preceptoria na prática e salvamento no diário.
+- `preceptoria.js`: instrumentos e roteiros acessados pela página inicial e salvamento no diário.
+- `assets/acao-*.svg` e `assets/LUCIDE-LICENSE`: ícones da página inicial e licença de uso.
 - `assets/logo-prmfc.png`: imagem do logo no topo.
 - `apps-script/Code.gs`: muda a ponte com o Google Sheets.
 - `README.md`: muda este arquivo de instruções.

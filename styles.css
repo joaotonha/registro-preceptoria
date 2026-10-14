@@ -21,9 +21,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    linear-gradient(120deg, rgba(29, 78, 216, 0.07), rgba(249, 115, 22, 0.06)),
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -74,7 +72,7 @@ textarea {
   color: var(--primary-strong);
   font-size: 0.76rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -85,8 +83,8 @@ h2 {
 }
 
 h1 {
-  font-size: clamp(2rem, 7vw, 4rem);
-  line-height: 0.98;
+  font-size: 1.65rem;
+  line-height: 1.15;
 }
 
 h2 {
@@ -104,14 +102,14 @@ h2 {
 
 .view-tabs {
   display: inline-grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
   padding: 4px;
   margin: 0 0 18px;
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 .tab-button {
@@ -129,6 +127,39 @@ h2 {
   background: var(--primary);
   color: #fff;
 }
+
+.home-view { padding: 32px 0 20px; }
+#home-title { font-size: 2.75rem; line-height: 1.16; max-width: 820px; margin: 12px 0 30px; color: var(--primary-strong); }
+.home-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.home-action {
+  display: grid; grid-template-columns: 48px minmax(0, 1fr) 24px; align-items: center; gap: 20px;
+  min-height: 148px; padding: 26px; border: 1px solid var(--line); border-radius: 8px;
+  background: white; color: var(--text); font-size: 1.3rem; font-weight: 700; text-align: left; cursor: pointer;
+  border-left: 5px solid var(--accent);
+}
+.home-action img { width: 48px; height: 48px; }
+.home-action:hover { background: var(--surface-soft); border-color: var(--primary); }
+.home-arrow { color: var(--primary); font-size: 1.5rem; }
+.home-account { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--muted); }
+.home-account span { overflow-wrap: anywhere; }
+.back-button { border: 0; background: transparent; color: var(--primary); padding: 12px 0; min-height: 44px; margin-bottom: 12px; cursor: pointer; font-weight: 600; }
+.home-action:focus-visible, .back-button:focus-visible, .choice-buttons button:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.choice-buttons { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.choice-buttons button { flex: 1 1 80px; min-width: 0; min-height: 44px; padding: 10px 8px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--text); font-weight: 600; cursor: pointer; overflow-wrap: anywhere; }
+.choice-buttons button[aria-pressed="true"] { color: white; background: var(--primary); border-color: var(--primary); }
+.choice-buttons button:disabled { cursor: default; }
+.small-select-native { display: none !important; }
+.small-select-choices { width: 100%; }
+.rating-buttons { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); }
+.rating-buttons button:last-child { grid-column: 1 / -1; }
+.rating-legend { margin: 0; color: var(--muted); line-height: 1.5; }
+.checklist-section { border-block-start: 1px solid var(--line); padding: 16px 0; }
+.checklist-section summary { font-weight: 700; cursor: pointer; color: var(--primary-strong); line-height: 1.5; }
+.checklist-count { float: right; font-size: 0.85rem; color: var(--muted); margin-left: 12px; }
+.checklist-item { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.checklist-item p { margin: 0 0 12px; line-height: 1.5; }
+.checklist-item .choice-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 540px; }
+.checklist-section > label { display: block; margin: 18px 0 8px; }
 
 #practice-view { padding: 12px 0 32px; }
 .practice-categories, .practice-catalog {
@@ -178,12 +209,21 @@ h2 {
 #practice-description { min-height: 260px; }
 
 @media (max-width: 640px) {
-  .view-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .view-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .tab-button { padding: 10px 8px; overflow-wrap: anywhere; }
   .practice-categories { gap: 6px; }
   .practice-categories .button { padding: 10px 6px; font-size: 0.85rem; }
   .practice-catalog, .practice-meta { grid-template-columns: 1fr; }
   .practice-method { min-height: 96px; }
+  .home-view { padding-top: 18px; }
+  #home-title { font-size: 2rem; margin-bottom: 24px; }
+  #home-title br { display: none; }
+  .home-actions { grid-template-columns: 1fr; gap: 12px; }
+  .home-action { min-height: 104px; padding: 18px; grid-template-columns: 38px minmax(0, 1fr) 20px; gap: 14px; font-size: 1.1rem; }
+  .home-action img { width: 38px; height: 38px; }
+  .home-account { align-items: flex-start; flex-direction: column; }
+  .rating-buttons { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .checklist-item .choice-buttons button { font-size: 0.85rem; }
 }
 
 .content-grid {

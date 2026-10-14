@@ -92,7 +92,7 @@ const state = {
   epaSelectedResident: "",
   activityEpaMap: new Map(),
   epaEditingId: "",
-  activeView: "diary",
+  activeView: "home",
 };
 
 const els = {
@@ -608,21 +608,70 @@ function fillEpaTaskSelect(selectedTask = "") {
   setSelectValue(els.epaTaskSelect, selectedTask);
 }
 
+// Keep native selects as the data source, with buttons for small option sets.
+function refreshSmallSelects() {
+  document.querySelectorAll("select").forEach((select) => {
+    const options = [...select.options].filter((option) => option.value && !option.disabled);
+    let group = select.nextElementSibling?.classList.contains("small-select-choices") ? select.nextElementSibling : null;
+    const useButtons = options.length > 0 && options.length < 4 && !select.multiple;
+    select.classList.toggle("small-select-native", useButtons);
+    if (!useButtons) { group?.remove(); return; }
+    if (!group) {
+      group = document.createElement("div");
+      group.className = "choice-buttons small-select-choices";
+      group.setAttribute("role", "group");
+      select.after(group);
+    }
+    group.setAttribute("aria-label", select.labels?.[0]?.textContent || select.getAttribute("aria-label") || "Opções");
+    const signature = JSON.stringify(options.map((option) => [option.value, option.textContent]));
+    if (group.dataset.options !== signature) {
+      group.dataset.options = signature;
+      group.replaceChildren();
+      options.forEach((option) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.value = option.value;
+        button.textContent = option.textContent;
+        button.addEventListener("click", () => {
+          const canClear = [...select.options].some((item) => item.value === "");
+          select.value = canClear && select.value === option.value ? "" : option.value;
+          select.dispatchEvent(new Event("change", { bubbles: true }));
+          refreshSmallSelects();
+        });
+        group.append(button);
+      });
+    }
+    group.querySelectorAll("button").forEach((button) => {
+      button.setAttribute("aria-pressed", String(select.value === button.dataset.value));
+      button.disabled = select.disabled;
+    });
+  });
+  document.querySelectorAll("[data-history-scope]").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.historyScope === state.historyScope));
+  });
+}
+
 function showView(viewName) {
+  if (!state.preceptorEmail) viewName = "diary";
   state.activeView = viewName;
+  document.querySelector("#home-view").classList.toggle("is-hidden", viewName !== "home");
   els.diaryView.classList.toggle("is-hidden", viewName !== "diary");
   els.historyView.classList.toggle("is-hidden", viewName !== "history");
   els.epaView.classList.toggle("is-hidden", viewName !== "epa");
   document.querySelector("#practice-view").classList.toggle("is-hidden", viewName !== "practice");
   if (viewName === "practice") document.dispatchEvent(new Event("practice:refresh"));
   els.tabButtons.forEach((button) => {
-    button.classList.toggle("is-active", button.dataset.view === viewName);
+    const selected = button.dataset.view === viewName || (button.dataset.view === "home" && ["diary", "practice"].includes(viewName));
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-current", selected ? "page" : "false");
   });
+  refreshSmallSelects();
 }
 
 function updateActivePreceptorLabel() {
   const parts = [state.preceptorName, state.preceptorEmail, state.preceptorUnit].filter(Boolean);
   els.activePreceptor.textContent = parts.join(" · ");
+  document.querySelector("#home-preceptor").textContent = [state.preceptorName, state.preceptorUnit].filter(Boolean).join(" · ");
 }
 
 function setLoggedIn(preceptorName, preceptorEmail, preceptorUnit = "") {
@@ -644,7 +693,7 @@ function setLoggedIn(preceptorName, preceptorEmail, preceptorUnit = "") {
   els.historyPanel.classList.remove("is-hidden");
   els.epaAppPanel.classList.remove("is-hidden");
   els.viewTabs.classList.remove("is-hidden");
-  showView(state.activeView || "diary");
+  showView("home");
 }
 
 function setLoggedOut() {
@@ -665,6 +714,8 @@ function setLoggedOut() {
   localStorage.removeItem("preceptoria.preceptorUnit");
   els.viewTabs.classList.add("is-hidden");
   showView("diary");
+  els.recordForm.reset();
+  setMultiSelectValues(diaryEpaControl, []);
   els.loginPanel.classList.remove("is-hidden");
   els.recordPanel.classList.add("is-hidden");
   els.historyPanel.classList.add("is-hidden");
@@ -1054,6 +1105,7 @@ function renderHistory() {
   els.historyPanel.classList.toggle("is-empty", rows.length === 0);
   renderStats();
   updateQuarterFeedbackButton();
+  refreshSmallSelects();
 }
 
 function filteredEpaProgress(options = {}) {
@@ -1241,6 +1293,7 @@ function renderEpaProgress() {
   renderEpaSummary(summaryRows);
   els.epaAppPanel.classList.toggle("is-empty", Boolean(state.epaSelectedResident) && rows.length === 0);
   renderEpaStats();
+  refreshSmallSelects();
 }
 
 function createActionButton(label, action, id, danger = false) {
@@ -1503,6 +1556,17 @@ els.tabButtons.forEach((button) => {
   button.addEventListener("click", () => showView(button.dataset.view));
 });
 
+document.querySelectorAll("[data-back-home]").forEach((button) => {
+  button.addEventListener("click", () => { showView("home"); document.querySelector("#home-title").focus(); });
+});
+document.querySelector("#home-change-preceptor").addEventListener("click", setLoggedOut);
+document.querySelectorAll("[data-history-scope]").forEach((button) => {
+  button.addEventListener("click", () => {
+    els.historyScope.value = button.dataset.historyScope;
+    els.historyScope.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+});
+
 els.recordForm.addEventListener("submit", (event) => {
   event.preventDefault();
   syncResidentNameFromControls();
@@ -1645,6 +1709,7 @@ els.historyActivityFilter.addEventListener("change", (event) => {
 
 els.historyScope.addEventListener("change", async (event) => {
   state.historyScope = event.target.value;
+  refreshSmallSelects();
   localStorage.setItem("preceptoria.historyScope", state.historyScope);
   await loadHistory();
 });
@@ -1736,4 +1801,10 @@ async function initializeApp() {
   }
 }
 
+const smallSelectObserver = new MutationObserver((mutations) => {
+  if (mutations.some((mutation) => mutation.target.closest?.("select"))) refreshSmallSelects();
+});
+smallSelectObserver.observe(document.body, { childList: true, subtree: true });
+document.addEventListener("change", () => queueMicrotask(refreshSmallSelects));
+document.addEventListener("reset", () => queueMicrotask(refreshSmallSelects));
 initializeApp();
