@@ -104,7 +104,7 @@ h2 {
 
 .view-tabs {
   display: inline-grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -128,6 +128,62 @@ h2 {
 .tab-button.is-active {
   background: var(--primary);
   color: #fff;
+}
+
+#practice-view { padding: 12px 0 32px; }
+.practice-categories, .practice-catalog {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.practice-categories button { white-space: normal; }
+.practice-categories [aria-pressed="true"] {
+  background: var(--primary);
+  color: white;
+}
+.practice-method {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  min-height: 116px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--text);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.practice-method span { color: var(--muted); font-size: 0.9rem; }
+.practice-method[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 3px var(--accent); }
+.practice-method:focus-visible, .practice-categories button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+.practice-form { border-top: 1px solid var(--line); padding-top: 24px; }
+.practice-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 20px; }
+.practice-form legend { font-size: 1.3rem; font-weight: 800; padding: 0 0 12px; }
+.practice-form h3 { font-size: 1rem; margin: 8px 0 0; }
+.practice-meta { display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 16px; }
+.practice-meta > *, .practice-form .field { min-width: 0; }
+.practice-reference, .practice-epas { border-block: 1px solid var(--line); padding: 14px 0; line-height: 1.5; }
+.practice-reference summary, .practice-epas summary { cursor: pointer; color: var(--primary-strong); font-weight: 600; }
+.practice-reference p { color: var(--muted); }
+#practice-epas { max-height: 320px; overflow-y: auto; margin-top: 12px; }
+.practice-form .button { white-space: normal; }
+.practice-form textarea { min-height: 90px; }
+.practice-form fieldset:disabled { opacity: 0.8; }
+#practice-description { min-height: 260px; }
+
+@media (max-width: 640px) {
+  .view-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tab-button { padding: 10px 8px; overflow-wrap: anywhere; }
+  .practice-categories { gap: 6px; }
+  .practice-categories .button { padding: 10px 6px; font-size: 0.85rem; }
+  .practice-catalog, .practice-meta { grid-template-columns: 1fr; }
+  .practice-method { min-height: 96px; }
 }
 
 .content-grid {

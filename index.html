@@ -27,6 +27,7 @@
         <button class="tab-button is-active" type="button" data-view="diary">Diário</button>
         <button class="tab-button" type="button" data-view="history">Histórico</button>
         <button class="tab-button" type="button" data-view="epa">Painel das EPAS</button>
+        <button class="tab-button" type="button" data-view="practice">Preceptoria na prática</button>
       </nav>
 
       <section class="content-grid single-view app-view" id="diary-view" aria-label="Área de registro">
@@ -368,6 +369,41 @@
         </div>
       </section>
 
+      <section class="app-view is-hidden" id="practice-view" aria-label="Preceptoria na prática">
+        <h2>O que você deseja fazer agora?</h2>
+        <div class="practice-categories" id="practice-categories" aria-label="Tipo de atividade">
+          <button class="button secondary" type="button" data-category="discuss" aria-pressed="true">Discutir um caso</button>
+          <button class="button secondary" type="button" data-category="observe" aria-pressed="false">Observar uma atividade</button>
+          <button class="button secondary" type="button" data-category="feedback" aria-pressed="false">Dar feedback</button>
+        </div>
+        <div class="practice-catalog" id="practice-catalog"></div>
+        <form class="form practice-form is-hidden" id="practice-form">
+          <fieldset id="practice-fields">
+            <legend id="practice-title"></legend>
+            <p id="practice-purpose" class="panel-note"></p>
+            <details class="practice-reference"><summary>Sobre este método</summary><p id="practice-reference-note"></p><a id="practice-reference-link" target="_blank" rel="noopener noreferrer">Consultar referência</a></details>
+            <div class="practice-meta">
+              <div class="field"><label for="practice-date">Data da atividade</label><input id="practice-date" type="date"></div>
+              <div class="field"><label>Ano do residente</label><div class="segmented-control" aria-label="Ano do residente"><button class="segment-button" type="button" data-practice-year="R1" aria-pressed="false">R1</button><button class="segment-button" type="button" data-practice-year="R2" aria-pressed="false">R2</button><button class="segment-button" type="button" data-practice-year="R3" aria-pressed="false">R3</button></div></div>
+              <div class="field"><label for="practice-resident">Residente</label><select id="practice-resident"></select><input id="practice-resident-name" type="hidden"><input id="practice-other" class="is-hidden" placeholder="Nome completo" aria-label="Outro residente"><p class="field-hint" id="practice-resident-hint"></p></div>
+            </div>
+            <div class="field"><label for="practice-activity">Atividade no Diário</label><select id="practice-activity"></select></div>
+            <div id="practice-prompts" class="form"></div>
+            <details class="practice-epas"><summary>EPAs relacionadas (opcional)</summary><div id="practice-epas"></div></details>
+            <button class="button primary" id="practice-review-button" type="button">Revisar registro</button>
+            <div id="practice-review" class="is-hidden form">
+              <div class="field"><label for="practice-description">Registro da atividade</label><textarea id="practice-description" rows="12"></textarea></div>
+              <button class="button primary" id="practice-save" type="submit">Salvar no Diário</button>
+            </div>
+          </fieldset>
+          <p class="form-message" id="practice-message" role="status" aria-live="polite"></p>
+          <div id="practice-saved" class="is-hidden form-actions">
+            <button class="button secondary" type="button" id="practice-copy">Copiar para enviar ao residente</button>
+            <button class="button secondary" type="button" id="practice-history">Ver no Histórico</button>
+            <button class="button primary" type="button" id="practice-new">Nova atividade</button>
+          </div>
+        </form>
+      </section>
     </main>
 
     <template id="history-row-template">
@@ -385,5 +421,6 @@
     </template>
 
     <script src="script.js" defer></script>
+    <script src="preceptoria.js" defer></script>
   </body>
 </html>

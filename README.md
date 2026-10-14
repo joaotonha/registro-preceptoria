@@ -2,6 +2,64 @@
 
 Site estático para GitHub Pages com formulário de registro e painel de histórico conectado ao Google Sheets por Google Apps Script.
 
+## Atualização: Preceptoria na prática
+
+A nova aba reúne One-Minute Preceptor, SNAPPS, Discussão Baseada em Casos (CBD), Mini-CEX, DOPS, Sombra e sombra invertida e Feedback estruturado.
+
+1. Abra a aba **Preceptoria na prática** e escolha uma categoria e um roteiro.
+2. Selecione data, ano e residente. A lista segue o cadastro da sua unidade.
+3. Preencha as observações que fizerem sentido. Os campos são opcionais.
+4. Selecione as EPAs relacionadas, se desejar.
+5. Clique em **Revisar registro** e confira o texto. Você pode ajustá-lo antes de salvar.
+6. Clique em **Salvar no Diário** e aguarde a confirmação.
+7. Use **Copiar para enviar ao residente** para colar o registro no WhatsApp ou e-mail. O envio é manual.
+8. O mesmo registro fica disponível no Histórico para copiar, editar ou excluir.
+
+Os roteiros têm referências em **Sobre este método**. Mini-CEX e DOPS são adaptações formativas com descritores locais, não versões validadas dos instrumentos originais. O registro dessas atividades não altera automaticamente os níveis no Painel das EPAS.
+
+As anotações ficam na tela enquanto você alterna entre abas. Elas não são um rascunho permanente: salve antes de fechar o navegador. Se houver falha de conexão, o formulário mantém o texto; confira o Histórico antes de repetir o envio.
+
+### Publicar esta atualização: passo a passo detalhado
+
+Os arquivos já estão atualizados neste computador. O site que seus colegas acessam só muda depois de você enviá-los ao GitHub.
+
+1. No Mac, abra o **Finder** (ícone de rosto azul no Dock).
+2. Abra **Documentos > App Preceptoria**. Essa é a pasta com a versão nova.
+3. Localize estes cinco arquivos: `index.html`, `styles.css`, `script.js`, `preceptoria.js` e `README.md`. O arquivo `preceptoria.js` é novo e precisa ser enviado junto com os demais.
+4. No navegador, entre em **github.com** com a conta usada para publicar o aplicativo.
+5. Abra o repositório do aplicativo, ou seja, a página que mostra a lista dos arquivos do site. Não crie outro repositório.
+6. Para conferir onde o site é publicado, abra **Settings > Pages**. Se estiver configurado como **Deploy from a branch**, anote a branch e a pasta exibidas. Na configuração inicial deste projeto, usamos `main` e `/(root)`. Não precisa mudar nem salvar essas configurações novamente.
+7. Volte à aba **Code**. No seletor acima da lista de arquivos, escolha a branch anotada no passo anterior. Se a pasta de publicação for `/docs`, entre nessa pasta; se for `/(root)`, fique na lista principal.
+8. Clique em **Add file > Upload files**. Isso abre a tela para enviar arquivos.
+9. No Finder, selecione apenas os cinco arquivos do passo 3. Segure **Command** enquanto clica em cada um para selecionar vários.
+10. Arraste os cinco arquivos para a área de envio do GitHub. Também é possível clicar em **choose your files** e selecioná-los na janela que abrir. Aguarde aparecerem todos os nomes.
+11. Confira os nomes: o arquivo deve se chamar exatamente `preceptoria.js`, sem `.txt` no final. Envie os arquivos soltos, não a pasta inteira **App Preceptoria**. Os arquivos existentes serão atualizados e o novo será acrescentado. Não precisa apagar nada antes.
+12. No campo de mensagem, escreva **Adicionar Preceptoria na prática**.
+13. Se aparecer a escolha, selecione **Commit directly to the main branch**, caso `main` seja a branch usada pelo site. Isso significa salvar a atualização diretamente nessa versão do projeto. Se sua branch tiver outro nome, use a opção correspondente a ela.
+14. Clique no botão verde **Commit changes** para confirmar o envio.
+15. Abra a aba **Actions** do repositório. Aguarde a execução de publicação do Pages terminar com um sinal verde. Se ficar vermelha, abra a execução para ver a mensagem de erro antes de continuar.
+16. Abra **Settings > Pages** e use o endereço do site ou o botão **Visit site**, quando disponível. Também pode abrir o endereço que você já compartilha com seus colegas.
+17. Recarregue o site. No Chrome do Mac, **Command + Shift + R** força uma atualização dos arquivos. Se ainda aparecer a versão antiga, teste o endereço em uma janela anônima.
+18. Faça sua identificação e confira se aparece a aba **Preceptoria na prática**.
+
+Não envie as planilhas de residentes, arquivos CSV/TSV ou a pasta inteira: esta atualização precisa somente dos cinco arquivos indicados. O logo já publicado continua na pasta `assets`.
+
+Se em **Settings > Pages** estiver escrito **GitHub Actions**, a publicação é controlada por um fluxo próprio; confira a branch usada por esse fluxo antes de enviar. As instruções acima usam a configuração inicial por branch deste projeto.
+
+Referências de publicação: [envio de arquivos no GitHub](https://docs.github.com/en/repositories/working-with-files/managing-files/adding-a-file-to-a-repository) e [configuração do GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).
+
+### Conferir o funcionamento depois de publicar
+
+1. Abra **Preceptoria na prática > Discutir um caso > One-Minute Preceptor**.
+2. Selecione residente e data. Registre uma atividade real ou identifique claramente o texto como teste.
+3. Preencha uma observação, clique em **Revisar registro** e depois em **Salvar no Diário**.
+4. Aguarde a mensagem de sucesso. Clique em **Copiar para enviar ao residente** e cole em um editor de texto para conferir; não é necessário enviar a ninguém durante o teste.
+5. Clique em **Ver no Histórico** e confirme que a atividade aparece. Se foi um teste, exclua esse registro pelo próprio histórico.
+6. Caso a aba nova apareça mas não mostre os roteiros, confira se o arquivo `preceptoria.js` foi enviado na mesma pasta de `index.html`.
+7. Caso haja erro ao salvar, confira se o diário comum também apresenta o erro. Anote a mensagem exata antes de tentar novamente.
+
+Esta atualização usa a aba existente **Registo do Preceptor**. Não é necessário alterar a planilha nem publicar uma nova versão do Apps Script. O nome do método e as respostas ficam no registro descritivo.
+
 ## Como Atualizar o Site Depois de Mudanças Feitas Com o Codex
 
 Use esta seção sempre que você pedir mudanças aqui no Codex e quiser colocar a nova versão no ar.
@@ -13,6 +71,7 @@ Depois que o Codex fizer uma alteração, ele normalmente vai dizer quais arquiv
 - `index.html`: muda textos, campos, botões e estrutura da tela.
 - `styles.css`: muda cores, tamanhos, espaçamentos e aparência.
 - `script.js`: muda funcionamento do site.
+- `preceptoria.js`: roteiros da aba Preceptoria na prática e salvamento no diário.
 - `assets/logo-prmfc.png`: imagem do logo no topo.
 - `apps-script/Code.gs`: muda a ponte com o Google Sheets.
 - `README.md`: muda este arquivo de instruções.
@@ -334,7 +393,10 @@ Isso garante que a URL `/exec` use o código atualizado.
 - Em `Minha unidade`, o preceptor consegue ler e copiar registros de colegas da mesma unidade.
 - Em registros feitos por outros preceptores, os botões de editar e excluir não aparecem.
 - Os campos da atividade não são obrigatórios. O preceptor pode registrar uma atividade mesmo deixando ano, residente, atividade, descrição ou EPA em branco.
-- O campo `Nome do Residente` memoriza nomes já digitados ou carregados do histórico e mostra sugestões em novos registros.
+- O campo `Data da atividade` permite lançar registros retroativos. Se o preceptor não alterar, fica preenchido com a data de hoje.
+- O campo `Nome do Residente` carrega a lista da aba `Cadastro de Residentes`.
+- Essa lista é filtrada pela unidade do preceptor e também pelo botão `R1`, `R2` ou `R3`, quando um ano estiver selecionado.
+- Se o residente não aparecer na lista, escolha `Outro / não listado` e digite o nome manualmente.
 - O campo `Qual EPA isso se relaciona?` permite selecionar mais de uma EPA. Quando houver múltiplas EPAs, elas são salvas na mesma célula separadas por ponto e vírgula.
 - No histórico, cada registro criado pelo site pode ser editado ou excluído.
 - O histórico pode ser filtrado por busca livre, residente, atividade e intervalo de datas.
@@ -346,6 +408,20 @@ Isso garante que a URL `/exec` use o código atualizado.
 
 - Depois da identificação, o aplicativo mostra duas abas: `Diário` e `Histórico`.
 - Em `Histórico`, o preceptor consulta registros, filtra, copia feedbacks e alterna entre `Meus registros` e `Minha unidade`.
+
+## Funcionamento do painel EPA
+
+- Depois da identificação, o aplicativo mostra também a aba `EPA`.
+- Essa aba permite registrar avaliações de progressão por residente e por EPA.
+- A lista de residentes vem da aba `Cadastro de Residentes` e é filtrada pela unidade do preceptor.
+- A lista de EPAs vem da aba `Cadastro de EPAs`.
+- A lista de subtarefas vem do Marco Zero das EPAs da SBMFC e também fica na aba `Cadastro de EPAs`.
+- As avaliações ficam salvas na aba `Registro de Progressão EPA`.
+- O histórico EPA aparece em cards, com filtros por residente, EPA, nível e busca livre.
+- O nível de progressão usa as opções: `Não faz`, `Faz com supervisão direta`, `Faz com supervisão indireta`, `Faz sozinho` e `Consegue ensinar/supervisionar`.
+- O preceptor consegue copiar o texto da avaliação para usar em feedbacks.
+- O preceptor só pode editar ou excluir avaliações EPA criadas por ele.
+- A visualização do painel EPA segue a lógica de unidade: o preceptor vê as avaliações da própria unidade.
 
 ## Cabeçalhos esperados
 
@@ -377,6 +453,43 @@ Na aba `Cadastro de Preceptores`, use estes cabeçalhos:
 - `Perfil`
 
 Essa aba é criada automaticamente pelo Apps Script se ainda não existir. Ela registra o vínculo entre e-mail do preceptor e unidade.
+
+Na aba `Cadastro de Residentes`, use estes cabeçalhos:
+
+- `Nome do Residente`
+- `Ano do Residente`
+- `Unidade`
+
+Essa aba alimenta a lista suspensa do campo `Nome do residente`.
+O nome da aba precisa ser exatamente `Cadastro de Residentes`.
+Para `AMI` e `Saúde da Mulher`, a lista deve conter os residentes que rodam nesses ambulatórios.
+
+Na aba `Cadastro de EPAs`, use estes cabeçalhos:
+
+- `EPA`
+- `Subtarefa`
+- `Descrição`
+
+Essa aba alimenta a lista suspensa da aba `EPA`.
+Se ela ainda não existir, o Apps Script cria a aba automaticamente com as EPAs e subtarefas do Marco Zero.
+Você pode deixar a descrição em branco se a coluna `EPA` já tiver o texto completo.
+
+Na aba `Registro de Progressão EPA`, o script usa estes cabeçalhos:
+
+- `ID Progressão`
+- `Data da Avaliação`
+- `Nome do Preceptor`
+- `E-mail do Preceptor`
+- `Unidade`
+- `Ano do Residente`
+- `Nome do Residente`
+- `EPA`
+- `Subtarefa`
+- `Nível de Progressão`
+- `Registro da Avaliação`
+- `Próximos Passos`
+
+Essa aba é criada automaticamente pelo Apps Script se ainda não existir.
 
 ## Unidades de Saúde
 

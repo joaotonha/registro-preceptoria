@@ -613,6 +613,8 @@ function showView(viewName) {
   els.diaryView.classList.toggle("is-hidden", viewName !== "diary");
   els.historyView.classList.toggle("is-hidden", viewName !== "history");
   els.epaView.classList.toggle("is-hidden", viewName !== "epa");
+  document.querySelector("#practice-view").classList.toggle("is-hidden", viewName !== "practice");
+  if (viewName === "practice") document.dispatchEvent(new Event("practice:refresh"));
   els.tabButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.view === viewName);
   });
@@ -646,6 +648,7 @@ function setLoggedIn(preceptorName, preceptorEmail, preceptorUnit = "") {
 }
 
 function setLoggedOut() {
+  document.dispatchEvent(new Event("practice:reset"));
   state.preceptorName = "";
   state.preceptorEmail = "";
   state.preceptorUnit = "";
@@ -918,8 +921,10 @@ async function copyQuarterFeedback() {
 
 async function copyTextToClipboard(text) {
   if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch (_) { /* Fall back for browsers that deny clipboard permission. */ }
   }
 
   const textarea = document.createElement("textarea");
@@ -929,15 +934,21 @@ async function copyTextToClipboard(text) {
   textarea.style.left = "-9999px";
   document.body.appendChild(textarea);
   textarea.select();
-  document.execCommand("copy");
+  const copied = document.execCommand("copy");
   textarea.remove();
+  if (!copied) throw new Error("Não foi possível copiar. Selecione e copie o texto do registro.");
 }
 
 async function copyRecordFeedback(recordId, button) {
   const record = state.history.find((item) => item.id === recordId);
   if (!record) return;
 
-  await copyTextToClipboard(buildFeedbackText(record));
+  try {
+    await copyTextToClipboard(buildFeedbackText(record));
+  } catch (error) {
+    window.alert(error.message);
+    return;
+  }
   const originalText = button.textContent;
   button.textContent = "Copiado";
   button.disabled = true;
@@ -992,7 +1003,7 @@ function renderHistoryCard(item) {
 
   const actions = document.createElement("div");
   actions.className = "row-actions";
-  actions.append(createActionButton("Copiar feedback", "copy-feedback", item.id));
+  actions.append(createActionButton("Copiar para enviar ao residente", "copy-feedback", item.id));
   if (item.preceptorEmail === state.preceptorEmail) {
     actions.append(
       createActionButton("Editar", "edit", item.id),
@@ -1281,6 +1292,7 @@ async function loadOptions() {
     renderUnitOptions();
     renderResidentOptions();
     renderEpaResidentOptions();
+    document.dispatchEvent(new Event("practice:refresh"));
   } catch (error) {
     console.warn(error);
   }
