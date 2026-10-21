@@ -38,7 +38,45 @@ const ResidentPanelModel = (() => {
     return { epa, evaluations, subtasks, observed, total: tasks.length,
       coverage: tasks.length ? Math.round(observed / tasks.length * 100) : null, unlinked };
   }
-  return { key, epaKey, date, newest, inPeriod, residentRows, method, isObservation, epaSummary };
+  function feedbackPeriod(today, from = "", to = "") {
+    const end = to || today;
+    const [year, month, day] = end.split("-").map(Number);
+    const start = new Date(year, month - 1, 1, 12);
+    start.setMonth(start.getMonth() - 4);
+    const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+    start.setDate(Math.min(day, lastDay));
+    const defaultStart = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+    return { from: from || defaultStart, to: end, custom: Boolean(from || to) };
+  }
+  function feedbackBundle(history, evaluations, name, unit, period) {
+    const diary = residentRows(history, name, unit).filter((row) => inPeriod(row.timestamp, period.from, period.to));
+    const epas = residentRows(evaluations, name, unit).filter((row) => inPeriod(row.progressDate, period.from, period.to));
+    const entries = [...diary.map((row) => ({ kind: "diary", row, day: row.timestamp })),
+      ...epas.map((row) => ({ kind: "epa", row, day: row.progressDate }))]
+      .sort((a, b) => String(a.day || "").localeCompare(String(b.day || "")));
+    return { diary, epas, entries, period, name, unit };
+  }
+  function feedbackText(bundle) {
+    const labelDate = (value) => date(value).split("-").reverse().join("/") || "Não informada";
+    const lines = ["Registros e avaliações para apoiar o feedback", "", `Residente: ${bundle.name}`,
+      `Unidade: ${bundle.unit}`, `Período: ${labelDate(bundle.period.from)} a ${labelDate(bundle.period.to)}`,
+      `Registros do diário: ${bundle.diary.length} (incluem observações e discussões)`,
+      `Avaliações de EPA: ${bundle.epas.length}`, `Total: ${bundle.entries.length}`, ""];
+    bundle.entries.forEach(({ kind, row, day }, index) => {
+      lines.push(`${index + 1}. ${labelDate(day)} · ${kind === "epa" ? "Avaliação de EPA" : method(row)}`,
+        `Ano do residente: ${row.residentYear || "Não informado"}`, `Preceptor: ${row.preceptorName || "Não informado"}`,
+        `Unidade: ${row.unit || "Não informada"}`);
+      if (kind === "epa") lines.push(`EPA: ${row.epa || "Não informada"}`, `Subtarefa: ${row.epaTask || "Não informada"}`,
+        `Nível de supervisão: ${row.progressLevel || "Não informado"}`, "Registro da avaliação:", row.notes || "Sem registro descritivo.",
+        ...(row.nextSteps ? [`Próximos passos: ${row.nextSteps}`] : []));
+      else lines.push(`Atividade: ${row.activity || "Não informada"}`, `EPA(s): ${row.epa || "Não informada"}`,
+        "Registro:", row.description || "Sem registro descritivo.");
+      lines.push("", "────────────────────", "");
+    });
+    lines.push("Espaço para elaboração do feedback:", "- Pontos fortes observados:", "- Aspectos a desenvolver:", "- Combinados e próximos passos:");
+    return lines.join("\n");
+  }
+  return { key, epaKey, date, newest, inPeriod, residentRows, method, isObservation, epaSummary, feedbackPeriod, feedbackBundle, feedbackText };
 })();
 
 (() => {
@@ -57,6 +95,7 @@ const ResidentPanelModel = (() => {
   let needsReload = true;
   let pendingReload = false;
   let evaluationDirty = false;
+  let copyingFeedback = false;
 
   function node(tag, text, className) {
     const element = document.createElement(tag);
@@ -297,6 +336,38 @@ const ResidentPanelModel = (() => {
     container.append(filters, resultCount, list);
     draw();
   }
+  const feedbackCounts = (bundle) => `${bundle.diary.length} ${bundle.diary.length === 1 ? "registro" : "registros"} e ${bundle.epas.length} ${bundle.epas.length === 1 ? "avaliação EPA" : "avaliações EPA"}`;
+  function currentFeedbackBundle() {
+    const period = M.feedbackPeriod(todayInputValue(), byId("start").value, byId("end").value);
+    return M.feedbackBundle(unitHistory, state.epaProgress, selected, state.preceptorUnit, period);
+  }
+  function updateFeedbackButton() {
+    const bundle = currentFeedbackBundle();
+    const button = byId("copy-feedback");
+    const complete = loaded && !loading && !loadError && historyScope === "unit" && state.epaLoadStatus === "ready";
+    button.disabled = !selected || !complete || !bundle.entries.length || copyingFeedback || bundle.period.from > bundle.period.to;
+    button.textContent = copyingFeedback ? "Copiando…" : bundle.period.custom ? "Copiar período para feedback" : "Copiar quadrimestre para feedback";
+    button.title = complete ? `${feedbackCounts(bundle)}, de ${displayDate(bundle.period.from)} a ${displayDate(bundle.period.to)}. Sem filtro de datas, copia os últimos quatro meses.`
+      : "Aguarde o carregamento completo dos registros e avaliações da unidade. Se houver falha, atualize o painel.";
+  }
+  async function copyResidentFeedback() {
+    updateFeedbackButton();
+    if (byId("copy-feedback").disabled) return;
+    const bundle = currentFeedbackBundle();
+    const copyGeneration = generation;
+    const copyResident = selected;
+    copyingFeedback = true;
+    updateFeedbackButton();
+    try {
+      await copyTextToClipboard(M.feedbackText(bundle));
+      if (copyGeneration !== generation || selected !== copyResident) return;
+      setMessage(byId("feedback-status"), `Copiados ${feedbackCounts(bundle)}, de ${displayDate(bundle.period.from)} a ${displayDate(bundle.period.to)}. Cole o texto onde for elaborar o feedback.`, "success");
+    } catch (error) {
+      if (copyGeneration === generation && selected === copyResident) setMessage(byId("feedback-status"), error.message, "error");
+    } finally {
+      if (copyGeneration === generation) { copyingFeedback = false; updateFeedbackButton(); }
+    }
+  }
   function render() {
     const options = residents();
     const select = byId("resident");
@@ -319,6 +390,7 @@ const ResidentPanelModel = (() => {
     byId("content").classList.toggle("is-hidden", !selected || Boolean(invalidPeriod));
     byId("empty").classList.toggle("is-hidden", Boolean(selected) || Boolean(invalidPeriod));
     byId("empty").textContent = options.length ? "Selecione um residente para acompanhar os registros e as EPAs." : "Nenhum residente disponível. Atualize o painel ou confira o cadastro da unidade.";
+    updateFeedbackButton();
     if (!selected || invalidPeriod) return;
     const resident = currentResident();
     byId("name").textContent = resident.name;
@@ -367,13 +439,15 @@ const ResidentPanelModel = (() => {
   }
   byId("resident").addEventListener("change", () => {
     selected = byId("resident").value;
+    setMessage(byId("feedback-status"), "");
     state.epaSelectedResident = selected;
     byId("epas").replaceChildren();
     render();
   });
-  ["start", "end"].forEach((id) => byId(id).addEventListener("change", render));
-  byId("clear-period").addEventListener("click", () => { byId("start").value = ""; byId("end").value = ""; render(); });
+  ["start", "end"].forEach((id) => byId(id).addEventListener("change", () => { setMessage(byId("feedback-status"), ""); render(); }));
+  byId("clear-period").addEventListener("click", () => { byId("start").value = ""; byId("end").value = ""; setMessage(byId("feedback-status"), ""); render(); });
   byId("new-epa").addEventListener("click", () => openEvaluation());
+  byId("copy-feedback").addEventListener("click", copyResidentFeedback);
   root.querySelectorAll("[data-dashboard-tab]").forEach((button, index, buttons) => {
     button.addEventListener("click", () => switchTab(button.dataset.dashboardTab));
     button.addEventListener("keydown", (event) => {
@@ -413,6 +487,9 @@ const ResidentPanelModel = (() => {
     activeTab = "overview";
     timelineType = "0";
     evaluationDirty = false;
+    copyingFeedback = false;
+    setMessage(byId("feedback-status"), "");
+    byId("copy-feedback").disabled = true;
     byId("resident").replaceChildren(new Option("Selecione o residente", ""));
     delete byId("resident").dataset.options;
     byId("start").value = "";

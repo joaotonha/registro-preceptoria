@@ -1142,3 +1142,12 @@ td {
 @media (max-width: 430px) {
   .resident-period-fields { grid-template-columns: minmax(0, 1fr); }
 }
+
+.resident-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.resident-actions .button { white-space: normal; }
+#dashboard-feedback-status:empty { min-height: 0; }
+#dashboard-feedback-status:not(:empty) { margin: 0 0 16px; line-height: 1.5; }
+@media (max-width: 640px) {
+  .resident-actions { width: 100%; justify-content: flex-start; }
+  .resident-actions .button { flex: 1 1 240px; }
+}

@@ -475,6 +475,14 @@ const PRACTICE_METHODS = [
       }
       if (saving) return;
       storeDraft();
+      if (category === "epa") {
+        showView("epa");
+        const editor = document.getElementById("epa-evaluation-editor");
+        editor.open = true;
+        editor.scrollIntoView({ block: "start", behavior: "smooth" });
+        document.getElementById("epa-progress-date").focus({ preventScroll: true });
+        return;
+      }
       showView("practice");
       renderCatalog(category);
       q("form").classList.toggle("is-hidden", method?.category !== category);

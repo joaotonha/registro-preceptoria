@@ -33,6 +33,7 @@
         <h2 id="home-title" tabindex="-1">O que você deseja fazer <br>hoje como preceptor?</h2>
         <div class="home-actions">
           <button class="home-action" type="button" data-home-action="diary"><img src="assets/acao-diario.svg" alt=""><span>Registrar no Diário</span><span class="home-arrow" aria-hidden="true">→</span></button>
+          <button class="home-action" type="button" data-home-action="epa"><img src="assets/acao-diario.svg" alt=""><span>Registrar progressão nas EPAs</span><span class="home-arrow" aria-hidden="true">→</span></button>
           <button class="home-action" type="button" data-home-action="discuss"><img src="assets/acao-discutir.svg" alt=""><span>Discutir um caso</span><span class="home-arrow" aria-hidden="true">→</span></button>
           <button class="home-action" type="button" data-home-action="observe"><img src="assets/acao-observar.svg" alt=""><span>Observar uma atividade</span><span class="home-arrow" aria-hidden="true">→</span></button>
           <button class="home-action" type="button" data-home-action="feedback"><img src="assets/acao-feedback.svg" alt=""><span>Dar feedback</span><span class="home-arrow" aria-hidden="true">→</span></button>
@@ -273,7 +274,8 @@
             </div>
             <p id="dashboard-message" class="form-message" role="status" aria-live="polite"></p>
             <div id="dashboard-content" class="is-hidden">
-              <div class="resident-heading"><div><p class="eyebrow">Acompanhamento individual</p><h3 id="dashboard-name"></h3><p id="dashboard-context" class="panel-note"></p></div><button type="button" class="button primary" id="dashboard-new-epa">Registrar avaliação EPA</button></div>
+              <div class="resident-heading"><div><p class="eyebrow">Acompanhamento individual</p><h3 id="dashboard-name"></h3><p id="dashboard-context" class="panel-note"></p></div><div class="resident-actions"><button type="button" class="button primary" id="dashboard-new-epa">Registrar avaliação EPA</button><button type="button" class="button secondary" id="dashboard-copy-feedback" disabled>Copiar quadrimestre para feedback</button></div></div>
+              <p id="dashboard-feedback-status" class="form-message resident-feedback-status" role="status" aria-live="polite"></p>
               <div class="resident-tabs" role="tablist" aria-label="Seções do residente">
                 <button type="button" role="tab" id="dashboard-tab-overview" data-dashboard-tab="overview" aria-controls="dashboard-overview" aria-selected="true">Visão geral</button>
                 <button type="button" role="tab" id="dashboard-tab-epas" data-dashboard-tab="epas" aria-controls="dashboard-epas" aria-selected="false" tabindex="-1">EPAs</button>
@@ -453,6 +455,6 @@
 
     <script src="script.js" defer></script>
     <script src="preceptoria.js" defer></script>
-    <script src="resident-panel.js" defer></script>
+    <script src="resident-panel.js?v=20261021-feedback" defer></script>
   </body>
 </html>
