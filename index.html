@@ -25,7 +25,7 @@
       <nav class="view-tabs is-hidden" id="view-tabs" aria-label="Áreas do aplicativo">
         <button class="tab-button is-active" type="button" data-view="home">Início</button>
         <button class="tab-button" type="button" data-view="history">Histórico</button>
-        <button class="tab-button" type="button" data-view="epa">Painel das EPAS</button>
+        <button class="tab-button" type="button" data-view="epa">Painel do residente</button>
       </nav>
 
       <section class="app-view home-view is-hidden" id="home-view" aria-labelledby="home-title">
@@ -239,34 +239,43 @@
         </div>
       </section>
 
-      <section class="content-grid single-view app-view is-hidden" id="epa-view" aria-label="Área de acompanhamento EPA">
+      <section class="content-grid single-view app-view is-hidden" id="epa-view" aria-label="Painel do residente">
         <div class="panel epa-panel is-hidden" id="epa-panel">
           <div class="panel-header with-action">
             <div>
               <p class="eyebrow">Acompanhamento</p>
-              <h2>Painel EPA</h2>
-              <p class="panel-note">Use esta aba para documentar as atribuições de confiança dos residentes dentro das subtarefas das EPAs.</p>
+              <h2>Painel do residente</h2>
+              <p class="panel-note">Registros, observações e desenvolvimento das EPAs em um só lugar.</p>
             </div>
-            <button class="icon-button" id="refresh-epa" type="button" aria-label="Atualizar acompanhamento EPA" title="Atualizar acompanhamento EPA">
+            <button class="icon-button" id="refresh-epa" type="button" aria-label="Atualizar painel do residente" title="Atualizar painel do residente">
               <span aria-hidden="true">⟳</span>
             </button>
           </div>
 
-          <div class="stats-grid" aria-label="Resumo do acompanhamento EPA">
-            <div class="stat">
-              <span class="stat-value" id="epa-total-count">0</span>
-              <span class="stat-label">avaliações</span>
+          <div id="resident-dashboard">
+            <div class="resident-filters">
+              <div class="field"><label for="dashboard-resident">Residente</label><select id="dashboard-resident" data-keep-select><option value="">Selecione o residente</option></select></div>
+              <div class="field"><label for="dashboard-start">De</label><input id="dashboard-start" type="date"></div>
+              <div class="field"><label for="dashboard-end">Até</label><input id="dashboard-end" type="date"></div>
+              <button class="button secondary" id="dashboard-clear-period" type="button">Todo o período</button>
             </div>
-            <div class="stat">
-              <span class="stat-value" id="epa-resident-count">0</span>
-              <span class="stat-label">residentes</span>
+            <p id="dashboard-message" class="form-message" role="status" aria-live="polite"></p>
+            <div id="dashboard-content" class="is-hidden">
+              <div class="resident-heading"><div><p class="eyebrow">Acompanhamento individual</p><h3 id="dashboard-name"></h3><p id="dashboard-context" class="panel-note"></p></div><button type="button" class="button primary" id="dashboard-new-epa">Registrar avaliação EPA</button></div>
+              <div class="resident-tabs" role="tablist" aria-label="Seções do residente">
+                <button type="button" role="tab" id="dashboard-tab-overview" data-dashboard-tab="overview" aria-controls="dashboard-overview" aria-selected="true">Visão geral</button>
+                <button type="button" role="tab" id="dashboard-tab-epas" data-dashboard-tab="epas" aria-controls="dashboard-epas" aria-selected="false" tabindex="-1">EPAs</button>
+                <button type="button" role="tab" id="dashboard-tab-timeline" data-dashboard-tab="timeline" aria-controls="dashboard-timeline" aria-selected="false" tabindex="-1">Registros e observações</button>
+              </div>
+              <section id="dashboard-overview" role="tabpanel" aria-labelledby="dashboard-tab-overview"></section>
+              <section id="dashboard-epas" role="tabpanel" aria-labelledby="dashboard-tab-epas" class="is-hidden"></section>
+              <section id="dashboard-timeline" role="tabpanel" aria-labelledby="dashboard-tab-timeline" class="is-hidden"></section>
             </div>
-            <div class="stat">
-              <span class="stat-value" id="epa-last-date">-</span>
-              <span class="stat-label">última avaliação</span>
-            </div>
+            <p id="dashboard-empty" class="resident-empty">Selecione um residente para acompanhar os registros e as EPAs.</p>
           </div>
 
+          <details id="epa-evaluation-editor" class="epa-evaluation-editor">
+            <summary>Registrar ou editar avaliação EPA</summary>
           <form id="epa-progress-form" class="form epa-progress-form">
             <input id="epa-progress-id" name="progressId" type="hidden">
 
@@ -329,11 +338,15 @@
 
             <div class="form-actions">
               <button class="button primary full" id="submit-epa-progress" type="submit">Registrar avaliação EPA</button>
-              <button class="button secondary full is-hidden" id="cancel-epa-edit" type="button">Cancelar edição</button>
+              <button class="button secondary full is-hidden" id="cancel-epa-edit" type="button">Cancelar avaliação</button>
             </div>
             <p class="form-message" id="epa-form-message" role="status" aria-live="polite"></p>
           </form>
 
+          </details>
+
+          <div class="legacy-epa-history is-hidden" aria-hidden="true">
+          <span id="epa-total-count"></span><span id="epa-resident-count"></span><span id="epa-last-date"></span>
           <div class="toolbar epa-toolbar">
             <div class="search-field">
               <label class="sr-only" for="epa-filter">Filtrar avaliações EPA</label>
@@ -374,6 +387,7 @@
           <div class="empty-state" id="epa-empty-state">
             <strong>Nenhuma avaliação EPA encontrada.</strong>
             <span>Quando você registrar uma progressão, ela aparecerá aqui.</span>
+          </div>
           </div>
         </div>
       </section>
@@ -427,5 +441,6 @@
 
     <script src="script.js" defer></script>
     <script src="preceptoria.js" defer></script>
+    <script src="resident-panel.js" defer></script>
   </body>
 </html>

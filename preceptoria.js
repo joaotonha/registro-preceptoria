@@ -212,6 +212,10 @@ const PRACTICE_METHODS = [
       const input = document.getElementById(button.dataset.choiceInput);
       button.setAttribute("aria-pressed", String(input.value === button.dataset.value));
     });
+    q("form").querySelectorAll("[data-task-comment-for]").forEach((field) => {
+      const input = document.getElementById(field.dataset.taskCommentFor);
+      field.classList.toggle("is-hidden", input.value !== "Sim, mas");
+    });
     q("form").querySelectorAll(".checklist-section").forEach((section) => {
       const inputs = [...section.querySelectorAll("input[type=hidden]")];
       section.querySelector(".checklist-count").textContent = `${inputs.filter((input) => input.value).length}/${inputs.length}`;
@@ -269,6 +273,24 @@ const PRACTICE_METHODS = [
         const control = choiceControl(`practice-task-${sectionIndex}-${taskIndex}`, item.choices);
         control.setAttribute("aria-labelledby", label.id);
         row.append(label, control);
+        if (item.id === "calgary") {
+          const field = document.createElement("div");
+          field.className = "task-comment is-hidden";
+          field.dataset.taskCommentFor = control.querySelector("input").id;
+          const caption = document.createElement("label");
+          caption.htmlFor = `practice-task-comment-${sectionIndex}-${taskIndex}`;
+          caption.textContent = "O que faltou nesta ação? (opcional)";
+          const comment = document.createElement("textarea");
+          comment.id = caption.htmlFor;
+          comment.rows = 2;
+          comment.placeholder = "Descreva rapidamente o que faltou…";
+          comment.setAttribute("aria-describedby", label.id);
+          field.append(caption, comment);
+          row.append(field);
+          control.addEventListener("change", () => {
+            if (!field.classList.contains("is-hidden")) comment.focus();
+          });
+        }
         section.append(row);
       });
       const label = document.createElement("label");
@@ -420,7 +442,12 @@ const PRACTICE_METHODS = [
     if (method.domains) parts.push("Escala: 1–3 insatisfatório; 4–6 satisfatório (4 marginal); 7–9 superior.");
     if (method.id === "shadow" && q("direction").value) parts.push(`Observação: ${q("direction").value}`);
     (method.sections || []).forEach(([title, tasks], sectionIndex) => {
-      const lines = tasks.map((task, taskIndex) => `${task} — ${q(`task-${sectionIndex}-${taskIndex}`).value || "Não avaliado"}`);
+      const lines = tasks.map((task, taskIndex) => {
+        const answer = q(`task-${sectionIndex}-${taskIndex}`).value;
+        const comment = method.id === "calgary" && answer === "Sim, mas"
+          ? q(`task-comment-${sectionIndex}-${taskIndex}`).value.trim() : "";
+        return `${task} — ${answer || "Não avaliado"}${comment ? `\n  O que faltou: ${comment}` : ""}`;
+      });
       const comment = q(`comment-${sectionIndex}`).value.trim();
       if (comment) lines.push(`Comentários: ${comment}`);
       parts.push(`${title}\n${lines.join("\n")}`);

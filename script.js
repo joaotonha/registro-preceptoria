@@ -69,6 +69,7 @@ const state = {
   preceptorUnit: localStorage.getItem("preceptoria.preceptorUnit") || "",
   history: [],
   epaProgress: [],
+  epaLoadStatus: "idle",
   epaCatalog: [...DEFAULT_EPA_OPTIONS],
   epaTasks: [],
   residentDirectory: [],
@@ -447,7 +448,7 @@ function formatDate(value) {
 
 function formatDateOnly(value) {
   if (!value) return "-";
-  const date = new Date(value);
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? `${value}T12:00:00` : value);
   if (Number.isNaN(date.getTime())) return String(value);
 
   return new Intl.DateTimeFormat("pt-BR", {
@@ -613,7 +614,7 @@ function refreshSmallSelects() {
   document.querySelectorAll("select").forEach((select) => {
     const options = [...select.options].filter((option) => option.value && !option.disabled);
     let group = select.nextElementSibling?.classList.contains("small-select-choices") ? select.nextElementSibling : null;
-    const useButtons = options.length > 0 && options.length < 4 && !select.multiple;
+    const useButtons = options.length > 0 && options.length < 4 && !select.multiple && !select.hasAttribute("data-keep-select");
     select.classList.toggle("small-select-native", useButtons);
     if (!useButtons) { group?.remove(); return; }
     if (!group) {
@@ -666,6 +667,7 @@ function showView(viewName) {
     button.setAttribute("aria-current", selected ? "page" : "false");
   });
   refreshSmallSelects();
+  if (viewName === "epa") document.dispatchEvent(new Event("resident:open"));
 }
 
 function updateActivePreceptorLabel() {
@@ -698,11 +700,15 @@ function setLoggedIn(preceptorName, preceptorEmail, preceptorUnit = "") {
 
 function setLoggedOut() {
   document.dispatchEvent(new Event("practice:reset"));
+  document.dispatchEvent(new Event("resident:reset"));
   state.preceptorName = "";
   state.preceptorEmail = "";
   state.preceptorUnit = "";
   state.history = [];
   state.epaProgress = [];
+  state.epaLoadStatus = "idle";
+  state.epaSelectedResident = "";
+  document.querySelector("#epa-evaluation-editor").open = false;
   state.residentDirectory = [];
   state.residentNames = [];
   renderResidentOptions();
@@ -846,13 +852,15 @@ function startEpaEdit(progressId) {
   setSelectValue(els.epaProgressSelect, item.epa);
   fillEpaTaskSelect(item.epaTask || "");
   setEpaProgressLevel(item.progressLevel || "");
-  els.epaProgressNotes.value = item.notes || "";
+  els.epaProgressNotes.value = [item.notes, item.nextSteps ? `Próximos passos: ${item.nextSteps}` : ""].filter(Boolean).join("\n\n");
   els.epaProgressNextSteps.value = "";
   els.submitEpaProgress.textContent = "Salvar avaliação EPA";
   els.cancelEpaEdit.classList.remove("is-hidden");
   setMessage(els.epaFormMessage, "");
   showView("epa");
-  els.epaAppPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  const editor = document.querySelector("#epa-evaluation-editor");
+  editor.open = true;
+  editor.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderStats() {
@@ -1226,7 +1234,7 @@ function renderEpaCard(item) {
   const titleWrap = document.createElement("div");
   const date = document.createElement("span");
   date.className = "history-card-date";
-  date.textContent = formatDate(item.progressDate);
+  date.textContent = formatDateOnly(item.progressDate);
   const title = document.createElement("h3");
   title.textContent = item.residentName || "Residente não informado";
   titleWrap.append(date, title);
@@ -1257,7 +1265,7 @@ function renderEpaCard(item) {
 
   const notes = document.createElement("p");
   notes.className = "history-card-description";
-  notes.textContent = item.notes || "Sem registro da avaliação.";
+  notes.textContent = [item.notes || "Sem registro da avaliação.", item.nextSteps ? `Próximos passos: ${item.nextSteps}` : ""].filter(Boolean).join("\n\n");
   card.appendChild(notes);
 
   const actions = document.createElement("div");
@@ -1383,6 +1391,7 @@ async function loadHistory() {
     rememberResidentNames(state.history.map((item) => item.residentName));
     renderHistoryFilterOptions();
     renderHistory();
+    document.dispatchEvent(new Event("resident:history-changed"));
   } catch (error) {
     setMessage(els.formMessage, error.message, "error");
   } finally {
@@ -1393,6 +1402,9 @@ async function loadHistory() {
 async function loadEpaProgress() {
   if (!state.preceptorEmail) return;
   els.refreshEpa.disabled = true;
+  state.epaLoadStatus = "loading";
+  const requestEmail = state.preceptorEmail;
+  const requestUnit = state.preceptorUnit;
 
   try {
     const data = await apiGet({
@@ -1401,6 +1413,7 @@ async function loadEpaProgress() {
       preceptorEmail: state.preceptorEmail,
       preceptorUnit: state.preceptorUnit,
     });
+    if (requestEmail !== state.preceptorEmail || requestUnit !== state.preceptorUnit) return;
     if (data.unit) {
       state.preceptorUnit = normalizeUnit(data.unit);
       localStorage.setItem("preceptoria.preceptorUnit", state.preceptorUnit);
@@ -1410,10 +1423,15 @@ async function loadEpaProgress() {
       renderEpaResidentOptions();
     }
     state.epaProgress = Array.isArray(data.records) ? data.records : [];
+    state.epaLoadStatus = "ready";
     renderEpaFilterOptions();
     renderEpaProgress();
+    document.dispatchEvent(new Event("resident:epa-changed"));
   } catch (error) {
+    if (requestEmail !== state.preceptorEmail || requestUnit !== state.preceptorUnit) return;
+    state.epaLoadStatus = "error";
     setMessage(els.epaFormMessage, error.message, "error");
+    document.dispatchEvent(new Event("resident:epa-changed"));
   } finally {
     els.refreshEpa.disabled = false;
   }
@@ -1616,7 +1634,7 @@ els.epaLevelButtons.forEach((button) => {
 
 els.changePreceptor.addEventListener("click", setLoggedOut);
 els.refreshHistory.addEventListener("click", loadHistory);
-els.refreshEpa.addEventListener("click", loadEpaProgress);
+els.refreshEpa.addEventListener("click", () => document.dispatchEvent(new Event("resident:refresh")));
 els.copyQuarterFeedback.addEventListener("click", copyQuarterFeedback);
 
 els.cancelEdit.addEventListener("click", () => {

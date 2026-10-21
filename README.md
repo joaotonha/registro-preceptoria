@@ -11,7 +11,7 @@ A primeira tela após a identificação agora é **Início**, com a pergunta **O
 - **Observar uma atividade:** Mini-CEX, Calgary-Cambridge, DOPS e Sombra/sombra invertida.
 - **Dar feedback:** abre diretamente o formulário de um novo feedback.
 
-Histórico e Painel das EPAs continuam na navegação principal. A antiga aba Preceptoria na prática foi incorporada ao Início.
+Histórico e Painel do residente ficam na navegação principal. A antiga aba Preceptoria na prática foi incorporada ao Início.
 
 Os campos com uma, duas ou três opções disponíveis aparecem como botões. Listas maiores, como unidades e atividades, continuam como listas suspensas. Os botões de avaliação começam sem seleção; clicar novamente na opção selecionada limpa a resposta.
 
@@ -30,9 +30,11 @@ Os instrumentos têm referências em **Sobre este método**:
 - **Calgary-Cambridge:** os 28 itens do apêndice brasileiro de Dohms et al. (2021), organizados em seis seções, com Não / Sim, mas / Sim. Texto e opções preservados do PDF fornecido, com atribuição e referência. Comentários e feedback são campos complementares do diário. Não há soma automática de notas.
 - **DOPS:** checklist local com redação própria, em sete etapas, com Fez / Não fez / Não se aplica. Não é cópia integral do site de referência nem formulário original validado. O procedimento observado e o apoio necessário podem ser descritos nos campos de texto.
 
-Itens sem resposta são distintos de Não fez, Não ou Não se aplica. O registro identifica o instrumento e sua versão, e não altera automaticamente os níveis no Painel das EPAS.
+Itens sem resposta são distintos de Não fez, Não ou Não se aplica. O registro identifica o instrumento e sua versão, e não altera automaticamente os níveis na seção EPAs do Painel do residente.
 
 As anotações são preservadas durante a navegação entre Início, formulários e instrumentos na mesma sessão. Elas não são um rascunho permanente: salve antes de fechar ou recarregar o navegador ou trocar de preceptor. Se houver falha de conexão, o formulário mantém o texto; confira o Histórico antes de repetir o envio.
+
+No Calgary-Cambridge, selecionar **Sim, mas** abre uma caixa curta de texto em cada ação para anotar o que faltou. A anotação é opcional e acompanha a ação no registro revisado e salvo. Ao mudar a resposta, a caixa fica oculta e seu texto é preservado na sessão, mas só entra no registro se a resposta for **Sim, mas**.
 
 ### Publicar esta atualização: passo a passo detalhado
 
@@ -40,16 +42,16 @@ Os arquivos já estão atualizados neste computador. O site que seus colegas ace
 
 1. No Mac, abra o **Finder** (ícone de rosto azul no Dock).
 2. Abra **Documentos > App Preceptoria**. Essa é a pasta com a versão nova.
-3. Localize estes cinco arquivos: `index.html`, `styles.css`, `script.js`, `preceptoria.js` e `README.md`. Todos devem ser atualizados juntos. Os novos ícones também precisam ser enviados; veja a etapa abaixo sobre a pasta `assets`.
+3. Localize estes seis arquivos: `index.html`, `styles.css`, `script.js`, `preceptoria.js`, `resident-panel.js` e `README.md`. Todos devem ser atualizados juntos. Os novos ícones também precisam ser enviados; veja a etapa abaixo sobre a pasta `assets`.
 4. No navegador, entre em **github.com** com a conta usada para publicar o aplicativo.
 5. Abra o repositório do aplicativo, ou seja, a página que mostra a lista dos arquivos do site. Não crie outro repositório.
 6. Para conferir onde o site é publicado, abra **Settings > Pages**. Se estiver configurado como **Deploy from a branch**, anote a branch e a pasta exibidas. Na configuração inicial deste projeto, usamos `main` e `/(root)`. Não precisa mudar nem salvar essas configurações novamente.
 7. Volte à aba **Code**. No seletor acima da lista de arquivos, escolha a branch anotada no passo anterior. Se a pasta de publicação for `/docs`, entre nessa pasta; se for `/(root)`, fique na lista principal.
 8. Clique em **Add file > Upload files**. Isso abre a tela para enviar arquivos.
-9. No Finder, selecione apenas os cinco arquivos do passo 3. Segure **Command** enquanto clica em cada um para selecionar vários.
-10. Arraste os cinco arquivos para a área de envio do GitHub. Também é possível clicar em **choose your files** e selecioná-los na janela que abrir. Aguarde aparecerem todos os nomes.
-11. Confira os nomes: o arquivo deve se chamar exatamente `preceptoria.js`, sem `.txt` no final. Envie os arquivos soltos, não a pasta inteira **App Preceptoria**. Os arquivos existentes serão atualizados e o novo será acrescentado. Não precisa apagar nada antes.
-12. No campo de mensagem, escreva **Atualizar página inicial e instrumentos de observação**.
+9. No Finder, selecione apenas os seis arquivos do passo 3. Segure **Command** enquanto clica em cada um para selecionar vários.
+10. Arraste os seis arquivos para a área de envio do GitHub. Também é possível clicar em **choose your files** e selecioná-los na janela que abrir. Aguarde aparecerem todos os nomes.
+11. Confira os nomes: os arquivos devem se chamar exatamente `preceptoria.js` e `resident-panel.js`, sem `.txt` no final. Envie os arquivos soltos, não a pasta inteira **App Preceptoria**. Os arquivos existentes serão atualizados e o novo será acrescentado. Não precisa apagar nada antes.
+12. No campo de mensagem, escreva **Adicionar painel do residente e acompanhamento visual das EPAs**.
 13. Se aparecer a escolha, selecione **Commit directly to the main branch**, caso `main` seja a branch usada pelo site. Isso significa salvar a atualização diretamente nessa versão do projeto. Se sua branch tiver outro nome, use a opção correspondente a ela.
 14. Clique no botão verde **Commit changes** para confirmar o envio.
 15. Abra a aba **Actions** do repositório. Aguarde a execução de publicação do Pages terminar com um sinal verde. Se ficar vermelha, abra a execução para ver a mensagem de erro antes de continuar.
@@ -435,19 +437,33 @@ Isso garante que a URL `/exec` use o código atualizado.
 - Depois da identificação, o aplicativo mostra duas abas: `Diário` e `Histórico`.
 - Em `Histórico`, o preceptor consulta registros, filtra, copia feedbacks e alterna entre `Meus registros` e `Minha unidade`.
 
-## Funcionamento do painel EPA
+## Funcionamento do painel do residente
 
-- Depois da identificação, o aplicativo mostra também a aba `EPA`.
-- Essa aba permite registrar avaliações de progressão por residente e por EPA.
-- A lista de residentes vem da aba `Cadastro de Residentes` e é filtrada pela unidade do preceptor.
-- A lista de EPAs vem da aba `Cadastro de EPAs`.
-- A lista de subtarefas vem do Marco Zero das EPAs da SBMFC e também fica na aba `Cadastro de EPAs`.
-- As avaliações ficam salvas na aba `Registro de Progressão EPA`.
-- O histórico EPA aparece em cards, com filtros por residente, EPA, nível e busca livre.
-- O nível de progressão usa as opções: `Não faz`, `Faz com supervisão direta`, `Faz com supervisão indireta`, `Faz sozinho` e `Consegue ensinar/supervisionar`.
-- O preceptor consegue copiar o texto da avaliação para usar em feedbacks.
-- O preceptor só pode editar ou excluir avaliações EPA criadas por ele.
-- A visualização do painel EPA segue a lógica de unidade: o preceptor vê as avaliações da própria unidade.
+A aba **Painel do residente** reúne o acompanhamento individual, com seleção de residente e período. A seleção é mantida ao navegar entre as áreas do aplicativo na mesma sessão.
+
+- **Visão geral:** quantidade de registros do diário, observações (incluídas no diário), EPAs com avaliação e avaliações de subtarefas. Mostra também instrumentos utilizados, atividades recentes e oportunidades de observação. Contagens não são notas.
+- **EPAs:** lista as 15 EPAs e eventuais EPAs adicionais do catálogo. Cada cartão abre as subtarefas, com indicador colorido e rótulo do último nível registrado no período. Ao abrir uma subtarefa, aparecem a trajetória dos níveis e as avaliações completas, com data e preceptor. Os atalhos preenchem residente, EPA e subtarefa no formulário.
+- **Registros e observações:** linha do tempo do diário e das avaliações EPA, com filtro por tipo. As observações Calgary-Cambridge, Mini-CEX, DOPS e sombra são lidas com seu texto completo, inclusive comentários. Os registros podem ser copiados. A classificação do instrumento utiliza o cabeçalho existente `Método:`; registros livres permanecem no diário.
+
+**O que significa a barra:** subtarefas distintas do catálogo com ao menos uma avaliação e nível reconhecido no período ÷ total de subtarefas distintas cadastradas para a EPA. Três avaliações da mesma subtarefa contam uma vez na cobertura. Tarefas sem avaliação não recebem nível zero; o nível `Não faz` é uma avaliação explícita e conta como subtarefa avaliada. A barra não representa desempenho nem autonomia. Sem catálogo, a cobertura fica indisponível. Avaliações sem correspondência no catálogo continuam acessíveis, sem aumentar a cobertura. O último nível é o mais recente, mesmo que seja inferior a um registro anterior; não se calcula média ou máximo. Avaliações na mesma data sem horário seguem a ordem dos registros retornados como critério de desempate, sem inferir uma trajetória dentro daquele dia.
+
+O período filtra tanto os registros quanto os indicadores e níveis mostrados. Sem datas, considera todo o histórico disponível. Datas ausentes só entram na consulta sem limites de período.
+
+O painel consulta o diário com escopo **Minha unidade** de forma independente do filtro do Histórico. Assim, escolher **Meus registros** no Histórico não esconde as observações dos demais preceptores no painel individual. Falhas de carregamento e respostas com escopo limitado são sinalizadas. Os dados em memória são limpos ao trocar de preceptor.
+
+A lista de residentes combina o cadastro da unidade com os nomes presentes nos registros. As associações legadas ainda usam nome e unidade: nomes homônimos ou grafias diferentes precisam ser conciliados no cadastro antes de uma futura migração para identificadores estáveis. O painel não altera automaticamente os registros antigos.
+
+As EPAs e subtarefas vêm de **Cadastro de EPAs**; as avaliações continuam em **Registro de Progressão EPA**. Os níveis existentes foram preservados: `Não faz`, `Faz com supervisão direta`, `Faz com supervisão indireta`, `Faz sozinho` e `Consegue ensinar/supervisionar`. Somente o autor vê as ações de editar e excluir suas avaliações. O formulário fica recolhido em **Registrar ou editar avaliação EPA** e preserva uma avaliação em preenchimento ao usar outro atalho; conclua ou cancele antes de começar outra.
+
+Esta atualização usa os endpoints existentes. **Não precisa alterar nem republicar o Apps Script** se ele já oferece o histórico da unidade, as avaliações e o catálogo de subtarefas descritos neste README. Publique `resident-panel.js` junto com os demais arquivos do site.
+
+### Etapa futura: respostas estruturadas dos instrumentos
+
+Hoje, uma observação é salva como um texto completo. O novo painel já consegue exibir esse texto. Uma etapa futura poderá salvar também cada resposta em um campo próprio (por exemplo, o item “Negocia a agenda” do Calgary e seu comentário). Isso permitiria consultar a evolução daquele item entre consultas, preservando o texto para leitura. Essa etapa não foi implementada e não é necessária para o painel atual.
+
+### Verificação local
+
+Execute `node --test tests/resident-panel.test.cjs`. Os testes cobrem isolamento por residente/unidade, cobertura sem duplicação, ausência de catálogo, registros legados, último nível, filtros de período, classificação das observações e datas locais.
 
 ## Cabeçalhos esperados
 
