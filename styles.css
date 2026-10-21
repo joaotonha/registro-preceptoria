@@ -1038,7 +1038,7 @@ td {
 }
 
 /* Painel do residente */
-.resident-filters { display: grid; grid-template-columns: minmax(220px, 2fr) repeat(2, minmax(140px, 1fr)) auto; gap: 12px; align-items: end; }
+.resident-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 .resident-filters > *, .resident-heading > *, .resident-epa-heading { min-width: 0; }
 .resident-filters .button { min-height: 48px; }
 .resident-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin: 20px 0; }
@@ -1094,16 +1094,51 @@ td {
 .epa-evaluation-editor .epa-progress-form { margin-top: 20px; }
 .resident-tabs button:focus-visible, #resident-dashboard summary:focus-visible, .epa-evaluation-editor > summary:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
 @media (max-width: 820px) {
-  .resident-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .resident-filters > .field:first-child { grid-column: 1 / -1; }
   .resident-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .resident-filters .button { grid-column: 1 / -1; }
 }
 @media (max-width: 430px) {
-  .resident-filters { grid-template-columns: minmax(0, 1fr); }
   .resident-stats { gap: 8px; }
   .resident-stat { padding: 12px; }
   .resident-stat strong { font-size: 1.5rem; }
   .resident-epa > summary, .resident-epa-body, .resident-timeline-card { padding: 12px; }
   .resident-heading .button { width: 100%; }
+}
+
+/* Histórico: filtros essenciais visíveis, demais opções recolhidas. */
+.history-primary-filters { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(220px, 1.4fr); gap: 16px; align-items: end; }
+.history-primary-filters > * { min-width: 0; }
+.history-primary-filters .choice-buttons button { min-height: 48px; }
+.history-more-filters > summary { width: fit-content; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--primary-strong); font-weight: 600; cursor: pointer; line-height: 1.5; }
+.history-more-filters > summary:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.history-more-filters[open] > summary { background: var(--surface-soft); }
+.history-extra-fields { display: grid; gap: 12px; margin-top: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
+.history-advanced-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
+@media (max-width: 820px) {
+  .history-primary-filters { grid-template-columns: minmax(0, 1fr); }
+  .history-advanced-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 430px) {
+  .history-advanced-grid { grid-template-columns: minmax(0, 1fr); }
+  .history-extra-fields { padding: 12px; }
+}
+
+/* Cabeçalho e período do painel do residente. */
+.resident-panel-intro { align-items: flex-start; padding: 24px; margin-bottom: 24px; border: 1px solid var(--line); border-left: 4px solid var(--primary); border-radius: 10px; background: var(--surface-soft); }
+.resident-panel-intro > div { min-width: 0; }
+.resident-panel-intro h2 { margin: 8px 0 12px; font-size: clamp(1.6rem, 3vw, 2.1rem); line-height: 1.2; color: var(--primary-strong); }
+.resident-panel-intro .panel-note { margin: 0; font-size: 1rem; line-height: 1.6; }
+.resident-panel-intro .icon-button { flex-shrink: 0; background: white; }
+.resident-period-filter > summary { width: fit-content; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; color: var(--primary-strong); font-weight: 600; cursor: pointer; line-height: 1.5; }
+.resident-period-filter > summary:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.resident-period-filter[open] > summary { background: var(--surface-soft); }
+.resident-period-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; align-items: end; gap: 12px; margin-top: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
+.resident-period-fields > * { min-width: 0; }
+#dashboard-message:empty { margin: 0; min-height: 0; }
+@media (max-width: 640px) {
+  .resident-panel-intro { padding: 18px 16px; gap: 10px; }
+  .resident-period-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 12px; }
+  .resident-period-fields .button { grid-column: 1 / -1; }
+}
+@media (max-width: 430px) {
+  .resident-period-fields { grid-template-columns: minmax(0, 1fr); }
 }

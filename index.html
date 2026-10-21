@@ -173,11 +173,7 @@
           </div>
 
           <div class="toolbar history-toolbar">
-            <div class="search-field">
-              <label class="sr-only" for="history-filter">Filtrar histórico</label>
-              <input id="history-filter" type="search" placeholder="Buscar residente, atividade, descrição ou EPA">
-            </div>
-            <div class="filter-grid" aria-label="Filtros do histórico">
+            <div class="history-primary-filters" aria-label="Filtros principais do histórico">
               <div class="field compact-field">
                 <label for="history-scope">Visualização</label>
                 <input type="hidden" id="history-scope">
@@ -185,26 +181,37 @@
               </div>
               <div class="field compact-field">
                 <label for="history-resident-filter">Residente</label>
-                <select id="history-resident-filter">
+                <select id="history-resident-filter" data-keep-select>
                   <option value="">Todos</option>
                 </select>
               </div>
-              <div class="field compact-field">
-                <label for="history-activity-filter">Atividade</label>
-                <select id="history-activity-filter">
-                  <option value="">Todas</option>
-                </select>
-              </div>
-              <div class="field compact-field">
-                <label for="history-date-start">De</label>
-                <input id="history-date-start" type="date">
-              </div>
-              <div class="field compact-field">
-                <label for="history-date-end">Até</label>
-                <input id="history-date-end" type="date">
-              </div>
-              <button class="button secondary filter-clear" id="clear-history-filters" type="button">Limpar filtros</button>
             </div>
+            <details class="history-more-filters" id="history-more-filters">
+              <summary>Mais filtros</summary>
+              <div class="history-extra-fields">
+                <div class="search-field">
+                  <label class="sr-only" for="history-filter">Filtrar histórico</label>
+                  <input id="history-filter" type="search" placeholder="Buscar residente, atividade, descrição ou EPA">
+                </div>
+                <div class="filter-grid history-advanced-grid" aria-label="Filtros adicionais do histórico">
+                  <div class="field compact-field">
+                    <label for="history-activity-filter">Atividade</label>
+                    <select id="history-activity-filter">
+                      <option value="">Todas</option>
+                    </select>
+                  </div>
+                  <div class="field compact-field">
+                    <label for="history-date-start">De</label>
+                    <input id="history-date-start" type="date">
+                  </div>
+                  <div class="field compact-field">
+                    <label for="history-date-end">Até</label>
+                    <input id="history-date-end" type="date">
+                  </div>
+                  <button class="button secondary filter-clear" id="clear-history-filters" type="button">Limpar filtros</button>
+                </div>
+              </div>
+            </details>
             <div class="history-feedback-actions">
               <p class="filter-summary" id="history-results-count">Mostrando 0 registros</p>
               <button class="button secondary" id="copy-quarter-feedback" type="button" disabled>Copiar feedback do quadrimestre</button>
@@ -241,7 +248,7 @@
 
       <section class="content-grid single-view app-view is-hidden" id="epa-view" aria-label="Painel do residente">
         <div class="panel epa-panel is-hidden" id="epa-panel">
-          <div class="panel-header with-action">
+          <div class="panel-header with-action resident-panel-intro">
             <div>
               <p class="eyebrow">Acompanhamento</p>
               <h2>Painel do residente</h2>
@@ -255,9 +262,14 @@
           <div id="resident-dashboard">
             <div class="resident-filters">
               <div class="field"><label for="dashboard-resident">Residente</label><select id="dashboard-resident" data-keep-select><option value="">Selecione o residente</option></select></div>
-              <div class="field"><label for="dashboard-start">De</label><input id="dashboard-start" type="date"></div>
-              <div class="field"><label for="dashboard-end">Até</label><input id="dashboard-end" type="date"></div>
-              <button class="button secondary" id="dashboard-clear-period" type="button">Todo o período</button>
+              <details class="resident-period-filter" id="dashboard-period-filter">
+                <summary>Filtrar por período</summary>
+                <div class="resident-period-fields">
+                  <div class="field"><label for="dashboard-start">De</label><input id="dashboard-start" type="date"></div>
+                  <div class="field"><label for="dashboard-end">Até</label><input id="dashboard-end" type="date"></div>
+                  <button class="button secondary" id="dashboard-clear-period" type="button">Todo o período</button>
+                </div>
+              </details>
             </div>
             <p id="dashboard-message" class="form-message" role="status" aria-live="polite"></p>
             <div id="dashboard-content" class="is-hidden">
