@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20261021-navegacao-laranja-claro">
   </head>
   <body>
     <main class="app-shell">
@@ -32,11 +32,11 @@
         <p class="eyebrow">Sua prática, seu acompanhamento</p>
         <h2 id="home-title" tabindex="-1">O que você deseja fazer <br>hoje como preceptor?</h2>
         <div class="home-actions">
-          <button class="home-action" type="button" data-home-action="diary"><img src="assets/acao-diario.svg" alt=""><span>Registrar no Diário</span><span class="home-arrow" aria-hidden="true">→</span></button>
-          <button class="home-action" type="button" data-home-action="epa"><img src="assets/acao-diario.svg" alt=""><span>Registrar progressão nas EPAs</span><span class="home-arrow" aria-hidden="true">→</span></button>
-          <button class="home-action" type="button" data-home-action="discuss"><img src="assets/acao-discutir.svg" alt=""><span>Discutir um caso</span><span class="home-arrow" aria-hidden="true">→</span></button>
-          <button class="home-action" type="button" data-home-action="observe"><img src="assets/acao-observar.svg" alt=""><span>Observar uma atividade</span><span class="home-arrow" aria-hidden="true">→</span></button>
-          <button class="home-action" type="button" data-home-action="feedback"><img src="assets/acao-feedback.svg" alt=""><span>Dar feedback</span><span class="home-arrow" aria-hidden="true">→</span></button>
+          <button class="home-action" type="button" data-home-action="diary"><img src="assets/acao-diario.svg" alt=""><span class="home-action-label"><strong>Registrar no Diário</strong><small>Registro livre de uma atividade</small></span><span class="home-arrow" aria-hidden="true">→</span></button>
+          <button class="home-action" type="button" data-home-action="epa"><img src="assets/acao-epa.svg" alt=""><span class="home-action-label"><strong>Registrar progressão nas EPAs</strong><small>Avaliar subtarefas e níveis de supervisão</small></span><span class="home-arrow" aria-hidden="true">→</span></button>
+          <button class="home-action" type="button" data-home-action="discuss"><img src="assets/acao-discutir.svg" alt=""><span class="home-action-label"><strong>Discutir um caso</strong><small>Roteiros para explorar o raciocínio clínico</small></span><span class="home-arrow" aria-hidden="true">→</span></button>
+          <button class="home-action" type="button" data-home-action="observe"><img src="assets/acao-observar.svg" alt=""><span class="home-action-label"><strong>Observar uma atividade</strong><small>Instrumentos para observar e registrar</small></span><span class="home-arrow" aria-hidden="true">→</span></button>
+          <button class="home-action" type="button" data-home-action="feedback"><img src="assets/acao-feedback.svg" alt=""><span class="home-action-label"><strong>Dar feedback</strong><small>Organizar a conversa e os próximos passos</small></span><span class="home-arrow" aria-hidden="true">→</span></button>
         </div>
         <div class="home-account"><span id="home-preceptor"></span><button class="button secondary" id="home-change-preceptor" type="button">Trocar preceptor</button></div>
       </section>
@@ -188,7 +188,7 @@
               </div>
             </div>
             <details class="history-more-filters" id="history-more-filters">
-              <summary>Mais filtros</summary>
+              <summary id="history-filters-label">Mais filtros</summary>
               <div class="history-extra-fields">
                 <div class="search-field">
                   <label class="sr-only" for="history-filter">Filtrar histórico</label>
@@ -213,9 +213,9 @@
                 </div>
               </div>
             </details>
-            <div class="history-feedback-actions">
+            <p id="history-active-filters" class="active-filter-summary" aria-live="polite"></p><div class="history-feedback-actions">
               <p class="filter-summary" id="history-results-count">Mostrando 0 registros</p>
-              <button class="button secondary" id="copy-quarter-feedback" type="button" disabled>Copiar feedback do quadrimestre</button>
+              <button class="button secondary" id="copy-quarter-feedback" type="button">Preparar feedback no Painel</button>
             </div>
           </div>
 
@@ -264,18 +264,18 @@
             <div class="resident-filters">
               <div class="field"><label for="dashboard-resident">Residente</label><select id="dashboard-resident" data-keep-select><option value="">Selecione o residente</option></select></div>
               <details class="resident-period-filter" id="dashboard-period-filter">
-                <summary>Filtrar por período</summary>
-                <div class="resident-period-fields">
+                <summary id="dashboard-period-label">Filtrar por período</summary>
+                <div class="resident-period-fields"><div class="field period-preset"><label for="dashboard-period-preset">Período</label><select id="dashboard-period-preset" data-keep-select><option value="all">Todo o período</option><option value="current">Quadrimestre atual</option><option value="previous">Quadrimestre anterior</option><option value="custom">Personalizado</option></select></div>
                   <div class="field"><label for="dashboard-start">De</label><input id="dashboard-start" type="date"></div>
                   <div class="field"><label for="dashboard-end">Até</label><input id="dashboard-end" type="date"></div>
                   <button class="button secondary" id="dashboard-clear-period" type="button">Todo o período</button>
                 </div>
               </details>
             </div>
-            <p id="dashboard-message" class="form-message" role="status" aria-live="polite"></p>
+            <p id="dashboard-active-period" class="active-filter-summary" aria-live="polite"></p><p id="dashboard-message" class="form-message" role="status" aria-live="polite"></p>
             <div id="dashboard-content" class="is-hidden">
-              <div class="resident-heading"><div><p class="eyebrow">Acompanhamento individual</p><h3 id="dashboard-name"></h3><p id="dashboard-context" class="panel-note"></p></div><div class="resident-actions"><button type="button" class="button primary" id="dashboard-new-epa">Registrar avaliação EPA</button><button type="button" class="button secondary" id="dashboard-copy-feedback" disabled>Copiar quadrimestre para feedback</button></div></div>
-              <p id="dashboard-feedback-status" class="form-message resident-feedback-status" role="status" aria-live="polite"></p>
+              <div class="resident-heading"><div><p class="eyebrow">Acompanhamento individual</p><h3 id="dashboard-name"></h3><p id="dashboard-context" class="panel-note"></p></div><div class="resident-actions"><button type="button" class="button primary" id="dashboard-new-epa">Registrar progressão nas EPAs</button><button type="button" class="button secondary" id="dashboard-copy-feedback" disabled>Copiar quadrimestre para feedback</button></div></div>
+              <p id="dashboard-feedback-period" class="panel-note feedback-period-note"></p><p id="dashboard-feedback-status" class="form-message resident-feedback-status" role="status" aria-live="polite"></p>
               <div class="resident-tabs" role="tablist" aria-label="Seções do residente">
                 <button type="button" role="tab" id="dashboard-tab-overview" data-dashboard-tab="overview" aria-controls="dashboard-overview" aria-selected="true">Visão geral</button>
                 <button type="button" role="tab" id="dashboard-tab-epas" data-dashboard-tab="epas" aria-controls="dashboard-epas" aria-selected="false" tabindex="-1">EPAs</button>
@@ -453,8 +453,8 @@
       </tr>
     </template>
 
-    <script src="script.js" defer></script>
+    <script src="script.js?v=20261021-refinamento2" defer></script>
     <script src="preceptoria.js" defer></script>
-    <script src="resident-panel.js?v=20261021-feedback" defer></script>
+    <script src="resident-panel.js?v=20261021-refinamento2" defer></script>
   </body>
 </html>

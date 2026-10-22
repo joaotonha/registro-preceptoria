@@ -889,93 +889,14 @@ function buildFeedbackText(item) {
   ].join("\n");
 }
 
-function getQuarterFeedbackRecords(residentName) {
-  const resident = normalizeName(residentName);
-  const startDate = monthsAgo(4);
-  const endDate = new Date();
-
-  return state.history
-    .filter((item) => normalizeName(item.residentName) === resident)
-    .filter((item) => {
-      const date = new Date(item.timestamp);
-      return !Number.isNaN(date.getTime()) && date >= startDate && date <= endDate;
-    })
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-}
-
-function buildQuarterFeedbackText(residentName) {
-  const records = getQuarterFeedbackRecords(residentName);
-  const startDate = monthsAgo(4);
-  const endDate = new Date();
-  const residentYear = records.find((item) => item.residentYear)?.residentYear || "-";
-
-  const lines = [
-    "Síntese de registros do último quadrimestre",
-    "",
-    `Residente: ${residentName || "-"}`,
-    `Ano: ${residentYear}`,
-    `Período: ${formatDateOnly(startDate)} a ${formatDateOnly(endDate)}`,
-    `Total de registros: ${records.length}`,
-    "",
-  ];
-
-  if (!records.length) {
-    lines.push("Não há registros para este residente no último quadrimestre.");
-  } else {
-    records.forEach((item, index) => {
-      lines.push(
-        `${index + 1}. ${formatDateOnly(item.timestamp)}`,
-        `Preceptor: ${item.preceptorName || "-"}`,
-        `Unidade: ${item.unit || "-"}`,
-        `Atividade: ${item.activity || "-"}`,
-        `EPA(s): ${item.epa || "-"}`,
-        "Registro:",
-        item.description || "-",
-        "",
-      );
-    });
-  }
-
-  lines.push(
-    "Síntese para feedback:",
-    "- Pontos fortes observados:",
-    "- Pontos a desenvolver:",
-    "- Combinados para o próximo período:",
-  );
-
-  return lines.join("\n");
-}
-
 function updateQuarterFeedbackButton() {
-  const residentName = els.historyResidentFilter.value;
-  const records = residentName ? getQuarterFeedbackRecords(residentName) : [];
-  els.copyQuarterFeedback.disabled = !residentName || records.length === 0;
-  els.copyQuarterFeedback.textContent = residentName && records.length
-    ? `Copiar quadrimestre (${records.length})`
-    : "Copiar feedback do quadrimestre";
+  els.copyQuarterFeedback.disabled = false;
+  els.copyQuarterFeedback.textContent = "Preparar feedback no Painel";
 }
 
-async function copyQuarterFeedback() {
-  const residentName = els.historyResidentFilter.value;
-  if (!residentName) {
-    setMessage(els.formMessage, "Selecione um residente no filtro do histórico.", "error");
-    return;
-  }
-
-  const records = getQuarterFeedbackRecords(residentName);
-  if (!records.length) {
-    setMessage(els.formMessage, "Não há registros desse residente no último quadrimestre.", "error");
-    return;
-  }
-
-  await copyTextToClipboard(buildQuarterFeedbackText(residentName));
-  const originalText = els.copyQuarterFeedback.textContent;
-  els.copyQuarterFeedback.textContent = "Quadrimestre copiado";
-  els.copyQuarterFeedback.disabled = true;
-  window.setTimeout(() => {
-    updateQuarterFeedbackButton();
-    if (!els.copyQuarterFeedback.disabled) els.copyQuarterFeedback.textContent = originalText;
-  }, 1200);
+function copyQuarterFeedback() {
+  showView("epa");
+  document.dispatchEvent(new CustomEvent("resident:prepare-feedback", { detail: { resident: els.historyResidentFilter.value } }));
 }
 
 async function copyTextToClipboard(text) {
@@ -1058,7 +979,15 @@ function renderHistoryCard(item) {
   const description = document.createElement("p");
   description.className = "history-card-description";
   description.textContent = item.description || "Sem registro descritivo.";
-  card.appendChild(description);
+  const preview = document.createElement("p");
+  preview.className = "history-card-preview";
+  preview.textContent = (item.description || "Sem registro descritivo.").slice(0, 180) + ((item.description || "").length > 180 ? "…" : "");
+  const details = document.createElement("details");
+  details.className = "history-record-details";
+  const summary = document.createElement("summary");
+  summary.textContent = "Ver registro completo";
+  details.append(summary, description);
+  card.append(preview, details);
 
   const actions = document.createElement("div");
   actions.className = "row-actions";
@@ -1076,6 +1005,11 @@ function renderHistoryCard(item) {
 
 function renderHistory() {
   const rows = filteredHistory();
+  const active = [state.filter ? `Busca: ${state.filter}` : "", state.historyFilters.activity,
+    state.historyFilters.dateStart ? `De ${formatDateOnly(state.historyFilters.dateStart)}` : "",
+    state.historyFilters.dateEnd ? `Até ${formatDateOnly(state.historyFilters.dateEnd)}` : ""].filter(Boolean);
+  document.getElementById("history-filters-label").textContent = `Mais filtros${active.length ? ` · ${active.length} ${active.length === 1 ? "ativo" : "ativos"}` : ""}`;
+  document.getElementById("history-active-filters").textContent = active.join(" · ");
   els.historyCards.innerHTML = "";
   els.historyBody.innerHTML = "";
   const scopeLabel = state.historyScope === "unit" && state.preceptorUnit

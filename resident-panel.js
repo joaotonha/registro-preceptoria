@@ -39,14 +39,13 @@ const ResidentPanelModel = (() => {
       coverage: tasks.length ? Math.round(observed / tasks.length * 100) : null, unlinked };
   }
   function feedbackPeriod(today, from = "", to = "") {
-    const end = to || today;
-    const [year, month, day] = end.split("-").map(Number);
-    const start = new Date(year, month - 1, 1, 12);
-    start.setMonth(start.getMonth() - 4);
-    const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
-    start.setDate(Math.min(day, lastDay));
-    const defaultStart = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
-    return { from: from || defaultStart, to: end, custom: Boolean(from || to) };
+    const [year, month] = (to || today).split("-").map(Number);
+    const cycleYear = month < 3 ? year - 1 : year;
+    const quarter = month < 3 || month >= 11 ? 2 : month < 7 ? 0 : 1;
+    const start = new Date(cycleYear, 2 + quarter * 4, 1, 12);
+    const end = new Date(cycleYear, 6 + quarter * 4, 0, 12);
+    const iso = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    return { from: from || iso(start), to: to || (from ? today : iso(end)), custom: Boolean(from || to) };
   }
   function feedbackBundle(history, evaluations, name, unit, period) {
     const diary = residentRows(history, name, unit).filter((row) => inPeriod(row.timestamp, period.from, period.to));
@@ -96,6 +95,8 @@ const ResidentPanelModel = (() => {
   let pendingReload = false;
   let evaluationDirty = false;
   let copyingFeedback = false;
+  let epaSearch = "";
+  let epaFilter = "all";
 
   function node(tag, text, className) {
     const element = document.createElement(tag);
@@ -183,7 +184,7 @@ const ResidentPanelModel = (() => {
     container.replaceChildren();
     const stats = node("div", undefined, "resident-stats");
     stats.append(statistic(loaded ? history.length : "—", "registros do diário"),
-      statistic(loaded ? history.filter(M.isObservation).length : "—", "observações registradas"),
+      statistic(loaded ? history.filter(M.isObservation).length : "—", "observações entre os registros"),
       statistic(`${summaries.filter((s) => s.evaluations.length).length}/${summaries.length}`, "EPAs com avaliação"),
       statistic(evaluations.length, "avaliações de subtarefas"));
     container.append(stats);
@@ -248,9 +249,28 @@ const ResidentPanelModel = (() => {
     const legend = node("div", undefined, "resident-legend");
     legend.append(badge(""), ...DEFAULT_PROGRESS_LEVEL_OPTIONS.map(badge));
     container.append(legend);
+    const controls = node("div", undefined, "epa-explore-filters");
+    const search = node("input"); search.type = "search"; search.placeholder = "Buscar EPA ou subtarefa"; search.setAttribute("aria-label", "Buscar EPA ou subtarefa"); search.value = epaSearch;
+    const filter = node("select"); filter.setAttribute("aria-label", "Filtrar EPAs"); filter.setAttribute("data-keep-select", "");
+    [["all","Todas as EPAs"],["evaluated","Com avaliações"],["empty","Sem avaliações"]].forEach(([value,label]) => filter.append(new Option(label,value)));
+    filter.value = epaFilter;
+    const count = node("p", undefined, "panel-note");
+    controls.append(search, filter); container.append(controls, count);
+    function filterCards() {
+      let visible = 0;
+      container.querySelectorAll(".resident-epa").forEach((card) => {
+        const matches = (!epaSearch || card.dataset.search.includes(M.key(epaSearch))) && (epaFilter === "all" || (epaFilter === "evaluated" ? card.dataset.evaluated === "true" : card.dataset.evaluated === "false"));
+        card.hidden = !matches; if (matches) visible++;
+      });
+      count.textContent = `${visible} de ${summaries.length} EPAs${visible ? "" : " · Nenhuma EPA encontrada"}`;
+    }
+    search.addEventListener("input", () => { epaSearch = search.value; filterCards(); });
+    filter.addEventListener("change", () => { epaFilter = filter.value; filterCards(); });
     summaries.forEach((s) => {
       const details = node("details", undefined, "resident-epa");
       details.dataset.epaKey = M.epaKey(s.epa);
+      details.dataset.search = M.key([s.epa, ...s.subtasks.map(t => t.task)].join(" "));
+      details.dataset.evaluated = String(Boolean(s.evaluations.length));
       details.open = openEpas.has(details.dataset.epaKey);
       const summary = node("summary");
       const heading = node("div", undefined, "resident-epa-heading");
@@ -276,6 +296,7 @@ const ResidentPanelModel = (() => {
       details.append(body);
       container.append(details);
     });
+    filterCards();
   }
   function timelineEntries(history, evaluations) {
     return [...history.map((row) => ({ kind: "diary", row, day: row.timestamp })),
@@ -347,7 +368,8 @@ const ResidentPanelModel = (() => {
     const complete = loaded && !loading && !loadError && historyScope === "unit" && state.epaLoadStatus === "ready";
     button.disabled = !selected || !complete || !bundle.entries.length || copyingFeedback || bundle.period.from > bundle.period.to;
     button.textContent = copyingFeedback ? "Copiando…" : bundle.period.custom ? "Copiar período para feedback" : "Copiar quadrimestre para feedback";
-    button.title = complete ? `${feedbackCounts(bundle)}, de ${displayDate(bundle.period.from)} a ${displayDate(bundle.period.to)}. Sem filtro de datas, copia os últimos quatro meses.`
+    byId("feedback-period").textContent = `Feedback: ${displayDate(bundle.period.from)} a ${displayDate(bundle.period.to)} · registros do diário e avaliações EPA de todos os preceptores da unidade.`;
+    button.title = complete ? `${feedbackCounts(bundle)}, de ${displayDate(bundle.period.from)} a ${displayDate(bundle.period.to)}. Sem filtro de datas, copia o quadrimestre atual do ciclo iniciado em março.`
       : "Aguarde o carregamento completo dos registros e avaliações da unidade. Se houver falha, atualize o painel.";
   }
   async function copyResidentFeedback() {
@@ -378,6 +400,9 @@ const ResidentPanelModel = (() => {
     }
     if (!options.some((item) => M.key(item.name) === M.key(selected))) selected = "";
     select.value = options.find((item) => M.key(item.name) === M.key(selected))?.name || "";
+    const periodParts = [byId("start").value ? `De ${displayDate(byId("start").value)}` : "", byId("end").value ? `Até ${displayDate(byId("end").value)}` : ""].filter(Boolean);
+    byId("period-label").textContent = `Filtrar por período${periodParts.length ? " · ativo" : ""}`;
+    byId("active-period").textContent = periodParts.join(" · ");
     const invalidPeriod = byId("start").value && byId("end").value && byId("start").value > byId("end").value;
     const messages = [];
     if (loading) messages.push("Atualizando os registros da unidade…");
@@ -394,7 +419,7 @@ const ResidentPanelModel = (() => {
     if (!selected || invalidPeriod) return;
     const resident = currentResident();
     byId("name").textContent = resident.name;
-    byId("context").textContent = [resident.year, state.preceptorUnit, byId("start").value || byId("end").value ? "Período personalizado" : "Todo o período"].filter(Boolean).join(" · ");
+    byId("context").textContent = [resident.year, state.preceptorUnit, byId("start").value || byId("end").value ? periodParts.join(" · ") : "Todo o período"].filter(Boolean).join(" · ");
     const history = periodRows(matching(unitHistory), "timestamp");
     const evaluations = periodRows(matching(state.epaProgress), "progressDate");
     const epaNames = new Map();
@@ -444,8 +469,29 @@ const ResidentPanelModel = (() => {
     byId("epas").replaceChildren();
     render();
   });
-  ["start", "end"].forEach((id) => byId(id).addEventListener("change", () => { setMessage(byId("feedback-status"), ""); render(); }));
-  byId("clear-period").addEventListener("click", () => { byId("start").value = ""; byId("end").value = ""; setMessage(byId("feedback-status"), ""); render(); });
+  ["start", "end"].forEach((id) => byId(id).addEventListener("change", () => { byId("period-preset").value = "custom"; setMessage(byId("feedback-status"), ""); render(); }));
+  byId("clear-period").addEventListener("click", () => { byId("start").value = ""; byId("end").value = ""; byId("period-preset").value = "all"; setMessage(byId("feedback-status"), ""); render(); });
+  byId("period-preset").addEventListener("change", () => {
+    const choice = byId("period-preset").value;
+    if (choice === "custom") { byId("start").focus(); return; }
+    let reference = todayInputValue();
+    if (choice === "previous") {
+      const current = M.feedbackPeriod(reference);
+      const day = new Date(`${current.from}T12:00:00`); day.setDate(0); reference = dateKey(day);
+    }
+    const period = M.feedbackPeriod(reference);
+    byId("start").value = choice === "all" ? "" : period.from;
+    byId("end").value = choice === "all" ? "" : period.to;
+    setMessage(byId("feedback-status"), ""); render();
+  });
+  document.addEventListener("resident:prepare-feedback", (event) => {
+    selected = event.detail?.resident || "";
+    const period = M.feedbackPeriod(todayInputValue());
+    byId("start").value = period.from; byId("end").value = period.to;
+    byId("period-preset").value = "current";
+    setMessage(byId("feedback-status"), ""); render();
+    if (selected) byId("copy-feedback").focus(); else byId("resident").focus();
+  });
   byId("new-epa").addEventListener("click", () => openEvaluation());
   byId("copy-feedback").addEventListener("click", copyResidentFeedback);
   root.querySelectorAll("[data-dashboard-tab]").forEach((button, index, buttons) => {
@@ -488,6 +534,7 @@ const ResidentPanelModel = (() => {
     timelineType = "0";
     evaluationDirty = false;
     copyingFeedback = false;
+    epaSearch = ""; epaFilter = "all"; byId("period-preset").value = "all";
     setMessage(byId("feedback-status"), "");
     byId("copy-feedback").disabled = true;
     byId("resident").replaceChildren(new Option("Selecione o residente", ""));
